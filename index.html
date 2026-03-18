@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rafael Training Pro</title>
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --primary: #38bdf8;
+            --accent: #f472b6;
+            --text-main: #f8fafc;
+            --text-dim: #94a3b8;
+            --success: #4ade80;
+            --border: #334155;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0; padding: 0;
+            display: flex; flex-direction: column; align-items: center;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        header { width: 100%; padding: 20px 0; text-align: center; background: #1e293b; border-bottom: 1px solid var(--border); }
+        header h1 { margin: 0; font-size: 1.2rem; letter-spacing: 2px; font-weight: 800; color: var(--primary); text-transform: uppercase; }
+
+        .tabs-container {
+            position: sticky; top: 0; width: 100%; max-width: 500px;
+            background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(10px);
+            display: flex; justify-content: space-around; z-index: 1000; border-bottom: 1px solid var(--border);
+        }
+
+        .tab-btn {
+            background: none; border: none; color: var(--text-dim); font-weight: 700;
+            font-size: 1.2rem; padding: 15px; cursor: pointer; flex: 1; transition: 0.3s;
+        }
+
+        .tab-btn.active { color: var(--primary); border-bottom: 3px solid var(--primary); }
+
+        .container { width: 100%; max-width: 480px; padding: 20px; box-sizing: border-box; padding-bottom: 120px; }
+
+        .workout-content { display: none; animation: fadeIn 0.3s ease; }
+        .workout-content.active { display: block; }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        h2 { font-size: 0.9rem; color: var(--text-dim); text-transform: uppercase; margin: 10px 0 20px 0; display: flex; align-items: center; gap: 10px; }
+        h2::before { content: ''; width: 4px; height: 16px; background: var(--accent); border-radius: 4px; }
+
+        /* --- ESTILIZAÇÃO DO CARD --- */
+        .exercise-card {
+            background: var(--card-bg); border-radius: 16px; padding: 18px; margin-bottom: 15px;
+            border: 1px solid var(--border); transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex; align-items: flex-start; gap: 15px;
+            position: relative; overflow: hidden;
+        }
+
+        /* --- NOVO CHECKBOX ESTILIZADO --- */
+        .custom-checkbox {
+            position: relative;
+            min-width: 26px;
+            height: 26px;
+            margin-top: 2px;
+            cursor: pointer;
+        }
+
+        .custom-checkbox input {
+            position: absolute;
+            opacity: 0;
+            cursor: pointer;
+            height: 0; width: 0;
+        }
+
+        .checkmark {
+            position: absolute;
+            top: 0; left: 0;
+            height: 26px; width: 26px;
+            background-color: rgba(255,255,255,0.05);
+            border: 2px solid var(--border);
+            border-radius: 50%;
+            transition: all 0.3s ease;
+        }
+
+        .custom-checkbox:hover input ~ .checkmark {
+            border-color: var(--primary);
+        }
+
+        .custom-checkbox input:checked ~ .checkmark {
+            background-color: var(--success);
+            border-color: var(--success);
+            box-shadow: 0 0 15px rgba(74, 222, 128, 0.4);
+        }
+
+        .checkmark:after {
+            content: "";
+            position: absolute;
+            display: none;
+            left: 8px; top: 4px;
+            width: 6px; height: 11px;
+            border: solid white;
+            border-width: 0 3px 3px 0;
+            transform: rotate(45deg);
+        }
+
+        .custom-checkbox input:checked ~ .checkmark:after {
+            display: block;
+        }
+
+        /* Efeito de Concluído no Card */
+        .exercise-card.completed {
+            opacity: 0.4;
+            filter: grayscale(0.8);
+            border-color: transparent;
+            background: rgba(30, 41, 59, 0.5);
+            transform: scale(0.98);
+        }
+
+        .exercise-card.completed .ex-name {
+            text-decoration: line-through;
+            color: var(--text-dim);
+        }
+
+        /* --- CONTEÚDO DO CARD --- */
+        .ex-data { flex-grow: 1; }
+        .ex-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        
+        .ex-name { font-weight: 600; font-size: 1.05rem; color: var(--text-main); text-decoration: none; display: flex; align-items: center; }
+        .video-icon { font-size: 0.7rem; margin-left: 8px; color: var(--primary); opacity: 0.8; border: 1px solid var(--primary); border-radius: 4px; padding: 1px 4px; }
+
+        .tag { font-size: 0.6rem; background: rgba(56, 189, 248, 0.1); color: var(--primary); padding: 2px 6px; border-radius: 4px; border: 1px solid var(--primary); text-transform: uppercase; font-weight: 800; letter-spacing: 0.5px; }
+
+        .ex-info { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 10px; }
+        .info-item { min-width: 70px; }
+        .info-label { font-size: 0.55rem; color: var(--text-dim); text-transform: uppercase; display: block; margin-bottom: 3px; font-weight: 600; }
+        .info-value { font-size: 0.85rem; font-weight: 700; color: #fff; }
+        
+        .timer-trigger { color: var(--accent); cursor: pointer; border-bottom: 1px dotted var(--accent); transition: 0.2s; }
+        .timer-trigger:active { transform: scale(0.95); opacity: 0.7; }
+
+        .weight-input {
+            background: rgba(15, 23, 42, 0.5); border: 1px solid var(--border); border-radius: 8px;
+            color: var(--success); font-family: 'Inter'; font-weight: 800;
+            padding: 6px 10px; width: 75px; font-size: 0.85rem; outline: none; transition: 0.3s;
+        }
+        .weight-input:focus { border-color: var(--primary); background: rgba(15, 23, 42, 0.8); }
+
+        #timer-widget {
+            position: fixed; bottom: 30px; right: 30px; width: 75px; height: 75px;
+            background: var(--accent); border-radius: 50%; display: none;
+            flex-direction: column; align-items: center; justify-content: center;
+            box-shadow: 0 8px 25px rgba(244, 114, 182, 0.5); z-index: 2000;
+            font-weight: 800; font-size: 1.5rem; color: white; cursor: pointer; border: 3px solid rgba(255,255,255,0.2);
+        }
+    </style>
+</head>
+<body>
+
+<header><h1>RAFAEL TRAINING</h1></header>
+
+<div class="tabs-container">
+    <button class="tab-btn active" onclick="showWorkout('treinoA', this)">A</button>
+    <button class="tab-btn" onclick="showWorkout('treinoB', this)">B</button>
+    <button class="tab-btn" onclick="showWorkout('treinoC', this)">C</button>
+    <button class="tab-btn" onclick="showWorkout('treinoD', this)">D</button>
+    <button class="tab-btn" onclick="showWorkout('treinoE', this)">E</button>
+</div>
+
+<div id="timer-widget" onclick="stopTimer()">00</div>
+
+<div class="container">
+    
+    <div id="treinoA" class="workout-content active">
+        <h2>Treino A - Peito</h2>
+        <script>
+            function createExercise(id, name, reps, time, tag = '') {
+                const searchName = encodeURIComponent(name + ' execução academia');
+                document.write(`
+                <div class="exercise-card" id="card_${id}">
+                    <label class="custom-checkbox">
+                        <input type="checkbox" onchange="toggleComplete('${id}', this)">
+                        <span class="checkmark"></span>
+                    </label>
+                    <div class="ex-data">
+                        <div class="ex-header">
+                            <a href="https://www.youtube.com/results?search_query=${searchName}" target="_blank" class="ex-name">
+                                ${name} <span class="video-icon">VIDEO</span>
+                            </a>
+                            ${tag ? `<span class="tag">${tag}</span>` : ''}
+                        </div>
+                        <div class="ex-info">
+                            <div class="info-item"><span class="info-label">Séries/Reps</span><span class="info-value">${reps}</span></div>
+                            <div class="info-item">
+                                <span class="info-label">Carga</span>
+                                <input type="text" class="weight-input" placeholder="0 kg" id="w_${id}" onchange="saveWeight('${id}', this.value)">
+                            </div>
+                            <div class="info-item"><span class="info-label">Descanso</span><span class="info-value ${time !== 'Necessário' ? 'timer-trigger' : ''}" onclick="${time !== 'Necessário' ? `startTimer('${time}')` : ''}">${time}</span></div>
+                        </div>
+                    </div>
+                </div>
+                `);
+            }
+
+            createExercise('a1', 'Supino inclinado halteres', '2x12 + 2x8', '1m30', 'Pesado');
+            createExercise('a2', 'Supino reto barra', '4x12', '1m30');
+            createExercise('a3', 'Voador', '3x12 (2s iso)', '1m30');
+            createExercise('a4', 'Crossover baixo', '3x12', '1m30');
+            createExercise('a5', 'Paralelas', '3x máximo', '1m30');
+            createExercise('a6', 'Tríceps testa halter', '3x12', '1m30');
+            createExercise('a7', 'Tríceps corda', '2x12 + 1x10', '1m30', 'Drop');
+        </script>
+    </div>
+
+    <div id="treinoB" class="workout-content">
+        <h2>Treino B - Costas</h2>
+        <script>
+            createExercise('b1', 'Barra fixa pronada', '40 reps totais', '1m30');
+            createExercise('b2', 'Remada curvada', '2x12 + 2x8', 'Necessário', 'Pesado');
+            createExercise('b3', 'Puxador triângulo', '3x15', '1m');
+            createExercise('b4', 'Pulldown', '4x12', '1m30');
+            createExercise('b5', 'Remada baixa aberta', '3x10 + drop', '1m30', 'Drop');
+            createExercise('b6', 'Rosca alternada', '3x12', '1m');
+            createExercise('b7', 'Rosca Scott máquina', '3x12', '1m30');
+            createExercise('b8', 'Encolhimento ombros', '3x15', 'Necessário');
+        </script>
+    </div>
+
+    <div id="treinoC" class="workout-content">
+        <h2>Treino C - Anterior</h2>
+        <script>
+            createExercise('c1', 'Cadeira adutora', '3x15', '1m30');
+            createExercise('c2', 'Agachamento hack', '3x10-12', '1m30');
+            createExercise('c3', 'Leg 45°', '2x12 + 2x8', 'Necessário');
+            createExercise('c4', 'Cadeira extensora', '3x15 + drop', '1m30', 'Drop');
+            createExercise('c5', 'Panturrilha em pé', '3x falha', '1m30');
+            createExercise('c6', 'Panturrilha sentada', '3x falha', '1m30');
+        </script>
+    </div>
+
+    <div id="treinoD" class="workout-content">
+        <h2>Treino D - Ombro</h2>
+        <script>
+            createExercise('d1', 'Desenvolvimento halteres', '2x12 + 2x6-8', '1m30', 'Pesado');
+            createExercise('d2', 'Elevação lateral halter', '3x15 + drop', 'Necessário', 'Drop');
+            createExercise('d3', 'Elevação lateral máquina', '3x12', '1m30');
+            createExercise('d4', 'Crucifixo inverso', '3x15', '1m30');
+            createExercise('d5', 'Face pull', '3x15', '1m30');
+            createExercise('d6', 'Tríceps francês polia', '3x12', '1m30');
+            createExercise('d7', 'Rosca martelo', '3x12', '1m30');
+        </script>
+    </div>
+
+    <div id="treinoE" class="workout-content">
+        <h2>Treino E - Posterior</h2>
+        <script>
+            createExercise('e1', 'Levantamento terra', '3x6-8', 'Necessário');
+            createExercise('e2', 'Mesa flexora', '4x12', '1m30');
+            createExercise('e3', 'Elevação pélvica', '3x12', 'Necessário');
+            createExercise('e4', 'Cadeira abdutora', '3x13', '1m');
+            createExercise('e5', 'Afundo halteres', '3x12 cada perna', '1m');
+        </script>
+    </div>
+
+</div>
+
+<script>
+    function showWorkout(id, btn) {
+        document.querySelectorAll('.workout-content').forEach(c => c.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+        btn.classList.add('active');
+        window.scrollTo({top: 0, behavior: 'smooth'});
+    }
+
+    function toggleComplete(id, checkbox) {
+        const card = document.getElementById('card_' + id);
+        card.classList.toggle('completed', checkbox.checked);
+    }
+
+    let timerInterval;
+    function startTimer(timeStr) {
+        stopTimer();
+        let seconds = 90;
+        if(timeStr.includes('m')) {
+            let parts = timeStr.split('m');
+            seconds = (parseInt(parts[0]) * 60) + (parseInt(parts[1]) || 0);
+        } else if(timeStr.includes('s')) {
+            seconds = parseInt(timeStr);
+        }
+
+        const display = document.getElementById('timer-widget');
+        display.style.display = 'flex';
+        let timeLeft = seconds;
+        display.innerText = timeLeft;
+        timerInterval = setInterval(() => {
+            timeLeft--;
+            display.innerText = timeLeft;
+            if (timeLeft <= 0) {
+                clearInterval(timerInterval);
+                display.style.background = 'var(--success)';
+                // Beep
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = ctx.createOscillator();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(440, ctx.currentTime);
+                osc.connect(ctx.destination);
+                osc.start();
+                osc.stop(ctx.currentTime + 0.3);
+                setTimeout(stopTimer, 3000);
+            }
+        }, 1000);
+    }
+
+    function stopTimer() {
+        clearInterval(timerInterval);
+        const display = document.getElementById('timer-widget');
+        display.style.display = 'none';
+        display.style.background = 'var(--accent)';
+    }
+
+    function saveWeight(id, value) {
+        localStorage.setItem('weight_' + id, value);
+    }
+
+    function loadWeights() {
+        document.querySelectorAll('.weight-input').forEach(input => {
+            const id = input.id.replace('w_', '');
+            const saved = localStorage.getItem('weight_' + id);
+            if (saved) input.value = saved;
+        });
+    }
+
+    window.onload = loadWeights;
+</script>
+
+</body>
+</html>
