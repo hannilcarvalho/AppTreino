@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rafael Training Pro</title>
+    <title>App treino</title>
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
@@ -162,7 +162,7 @@
 </head>
 <body>
 
-<header><h1>RAFAEL TRAINING</h1></header>
+<header><h1>TREINO</h1></header>
 
 <div class="tabs-container">
     <button class="tab-btn active" onclick="showWorkout('treinoA', this)">A</button>
@@ -270,6 +270,7 @@
 </div>
 
 <script>
+    // Navegação entre abas
     function showWorkout(id, btn) {
         document.querySelectorAll('.workout-content').forEach(c => c.classList.remove('active'));
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -278,11 +279,15 @@
         window.scrollTo({top: 0, behavior: 'smooth'});
     }
 
+    // Gerir Checkbox (Salvar e Alternar Classe)
     function toggleComplete(id, checkbox) {
         const card = document.getElementById('card_' + id);
         card.classList.toggle('completed', checkbox.checked);
+        // Salva o estado (true ou false) no LocalStorage
+        localStorage.setItem('check_' + id, checkbox.checked);
     }
 
+    // Lógica do Cronómetro
     let timerInterval;
     function startTimer(timeStr) {
         stopTimer();
@@ -304,7 +309,6 @@
             if (timeLeft <= 0) {
                 clearInterval(timerInterval);
                 display.style.background = 'var(--success)';
-                // Beep
                 const ctx = new (window.AudioContext || window.webkitAudioContext)();
                 const osc = ctx.createOscillator();
                 osc.type = 'sine';
@@ -324,19 +328,36 @@
         display.style.background = 'var(--accent)';
     }
 
+    // Salvar Carga
     function saveWeight(id, value) {
         localStorage.setItem('weight_' + id, value);
     }
 
-    function loadWeights() {
+    // CARREGAR TUDO (Cargas e Checkboxes) ao abrir a página
+    function loadSavedData() {
+        // Restaurar Cargas
         document.querySelectorAll('.weight-input').forEach(input => {
             const id = input.id.replace('w_', '');
-            const saved = localStorage.getItem('weight_' + id);
-            if (saved) input.value = saved;
+            const savedWeight = localStorage.getItem('weight_' + id);
+            if (savedWeight) input.value = savedWeight;
+        });
+
+        // Restaurar Checkboxes
+        document.querySelectorAll('.custom-checkbox input').forEach(checkbox => {
+            // Extrair ID do evento onchange: toggleComplete('ID', this)
+            const id = checkbox.getAttribute('onchange').split("'")[1];
+            const isChecked = localStorage.getItem('check_' + id) === 'true';
+            
+            if (isChecked) {
+                checkbox.checked = true;
+                const card = document.getElementById('card_' + id);
+                if (card) card.classList.add('completed');
+            }
         });
     }
 
-    window.onload = loadWeights;
+    // Executa ao carregar a página
+    window.onload = loadSavedData;
 </script>
 
 </body>
