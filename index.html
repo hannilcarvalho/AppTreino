@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AppTreino</title>
+    <title>App Treino</title>
     <meta name="mobile-web-app-capable" content="yes">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
@@ -32,7 +32,7 @@
         .exercise-card { background: var(--card-bg); border-radius: 16px; padding: 18px; margin-bottom: 15px; border: 1px solid var(--border); display: flex; align-items: flex-start; gap: 12px; position: relative; transition: 0.3s; }
         .exercise-card.completed { opacity: 0.3; filter: grayscale(1); }
 
-        .btn-remove { display: none; position: absolute; right: -8px; top: -8px; background: var(--danger); color: white; border: none; border-radius: 50%; width: 24px; height: 24px; font-weight: bold; cursor: pointer; z-index: 10; box-shadow: 0 2px 5px rgba(0,0,0,0.3); }
+        .btn-remove { display: none; position: absolute; right: -8px; top: -8px; background: var(--danger); color: white; border: none; border-radius: 50%; width: 24px; height: 24px; font-weight: bold; cursor: pointer; z-index: 10; }
         .edit-mode .btn-remove { display: block; }
 
         .custom-checkbox { min-width: 26px; height: 26px; position: relative; cursor: pointer; margin-top: 2px; }
@@ -43,13 +43,17 @@
         .custom-checkbox input:checked ~ .checkmark:after { display: block; }
 
         .ex-data { flex-grow: 1; }
-        .ex-name { font-weight: 600; font-size: 1rem; color: var(--text-main); text-decoration: none; display: block; margin-bottom: 8px; }
+        .ex-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
+        .ex-name { font-weight: 600; font-size: 1rem; color: var(--text-main); text-decoration: none; padding-right: 5px; }
+        
+        .tag { font-size: 0.6rem; background: rgba(56, 189, 248, 0.1); color: var(--primary); padding: 2px 6px; border-radius: 4px; border: 1px solid var(--primary); text-transform: uppercase; font-weight: 800; white-space: nowrap; }
+
         .ex-info { display: flex; gap: 12px; flex-wrap: wrap; }
         .info-label { font-size: 0.55rem; color: var(--text-dim); text-transform: uppercase; display: block; margin-bottom: 2px; }
         .info-value { font-size: 0.85rem; font-weight: 700; color: #fff; }
         
         .timer-trigger { color: var(--accent); border-bottom: 1px dotted var(--accent); cursor: pointer; }
-        .weight-input { background: rgba(0,0,0,0.25); border: 1px solid var(--border); border-radius: 6px; color: var(--success); padding: 4px 8px; width: 65px; font-weight: 800; outline: none; font-size: 0.8rem; }
+        .weight-input { background: rgba(0,0,0,0.25); border: 1px solid var(--border); border-radius: 6px; color: var(--success); padding: 4px 8px; width: 65px; font-weight: 800; outline: none; }
 
         .btn-add { display: none; width: 100%; padding: 15px; background: transparent; border: 2px dashed var(--border); color: var(--text-dim); border-radius: 12px; font-weight: 600; cursor: pointer; margin-top: 10px; }
         .edit-mode .btn-add { display: block; }
@@ -79,56 +83,56 @@
 <script>
     const defaultWorkouts = {
         treinoA: { title: "Treino A - Peito", exercises: [
-            {id: 'a1', name: "Supino inclinado halteres", reps: "2x12 + 2x8", time: "1m30"},
-            {id: 'a2', name: "Supino reto barra", reps: "4x12", time: "1m30"},
-            {id: 'a3', name: "Voador", reps: "3x12 (2s iso)", time: "1m30"},
-            {id: 'a4', name: "Crossover baixo", reps: "3x12", time: "1m30"},
-            {id: 'a5', name: "Paralelas", reps: "3x falha", time: "1m30"},
-            {id: 'a6', name: "Elevação lateral sentado", reps: "3x12 + 1 drop", time: "1m30"},
-            {id: 'a7', name: "Tríceps testa halter", reps: "3x12", time: "1m30"},
-            {id: 'a8', name: "Tríceps corda", reps: "2x12 + 1x10 drop", time: "1m30"}
+            {id: 'a1', name: "Supino inclinado halteres", reps: "2x12 + 2x8", time: "1m30", tag: "Pesado"},
+            {id: 'a2', name: "Supino reto barra", reps: "4x12", time: "1m30", tag: ""},
+            {id: 'a3', name: "Voador", reps: "3x12 (2s iso)", time: "1m30", tag: ""},
+            {id: 'a4', name: "Crossover baixo", reps: "3x12", time: "1m30", tag: ""},
+            {id: 'a5', name: "Paralelas", reps: "3x máx", time: "1m30", tag: ""},
+            {id: 'a6', name: "Elevação lateral sentado", reps: "3x12 + 1", time: "1m30", tag: "Drop"},
+            {id: 'a7', name: "Tríceps testa halter", reps: "3x12", time: "1m30", tag: ""},
+            {id: 'a8', name: "Tríceps corda", reps: "2x12 + 1x10", time: "1m30", tag: "Drop"}
         ]},
         treinoB: { title: "Treino B - Costas", exercises: [
-            {id: 'b1', name: "Barra fixa pronada", reps: "40 reps", time: "1m30"},
-            {id: 'b2', name: "Remada curvada", reps: "2x12 + 2x8", time: "Nec."},
-            {id: 'b3', name: "Puxador triângulo", reps: "3x15", time: "1m"},
-            {id: 'b4', name: "Pulldown", reps: "4x12", time: "1m30"},
-            {id: 'b5', name: "Remada baixa aberta", reps: "3x10 + drop", time: "1m30"},
-            {id: 'b6', name: "Rosca alternada", reps: "3x12", time: "1m"},
-            {id: 'b7', name: "Rosca Scott máquina", reps: "3x12", time: "1m30"},
-            {id: 'b8', name: "Encolhimento ombros", reps: "3x15", time: "Nec."}
+            {id: 'b1', name: "Barra fixa pronada", reps: "40 reps", time: "1m30", tag: ""},
+            {id: 'b2', name: "Remada curvada", reps: "2x12 + 2x8", time: "Nec.", tag: "Pesado"},
+            {id: 'b3', name: "Puxador triângulo", reps: "3x15", time: "1m", tag: ""},
+            {id: 'b4', name: "Pulldown", reps: "4x12", time: "1m30", tag: ""},
+            {id: 'b5', name: "Remada baixa aberta", reps: "3x10 + 1", time: "1m30", tag: "Drop"},
+            {id: 'b6', name: "Rosca alternada", reps: "3x12", time: "1m", tag: ""},
+            {id: 'b7', name: "Rosca Scott máquina", reps: "3x12", time: "1m30", tag: ""},
+            {id: 'b8', name: "Encolhimento ombros", reps: "3x15", time: "Nec.", tag: ""}
         ]},
         treinoC: { title: "Treino C - Anterior", exercises: [
-            {id: 'c1', name: "Cadeira adutora", reps: "3x15", time: "1m30"},
-            {id: 'c2', name: "Agachamento hack", reps: "3x10-12", time: "1m30"},
-            {id: 'c3', name: "Leg 45°", reps: "2x12+2x8", time: "Nec."},
-            {id: 'c4', name: "Cadeira extensora", reps: "3x15 + drop", time: "1m30"},
-            {id: 'c5', name: "Stiff", reps: "4x12", time: "1m30"},
-            {id: 'c6', name: "Panturrilha em pé", reps: "3x falha", time: "1m30"},
-            {id: 'c7', name: "Panturrilha sentada", reps: "3x falha", time: "1m30"}
+            {id: 'c1', name: "Cadeira adutora", reps: "3x15", time: "1m30", tag: ""},
+            {id: 'c2', name: "Agachamento hack", reps: "3x10-12", time: "1m30", tag: ""},
+            {id: 'c3', name: "Leg 45°", reps: "2x12+2x8", time: "Nec.", tag: ""},
+            {id: 'c4', name: "Cadeira extensora", reps: "3x15 + drop", time: "1m30", tag: "Drop"},
+            {id: 'c5', name: "Stiff", reps: "4x12", time: "1m30", tag: ""},
+            {id: 'c6', name: "Panturrilha em pé", reps: "3x falha", time: "1m30", tag: ""},
+            {id: 'c7', name: "Panturrilha sentada", reps: "3x falha", time: "1m30", tag: ""}
         ]},
         treinoD: { title: "Treino D - Ombro", exercises: [
-            {id: 'd1', name: "Desenvolvimento halteres", reps: "2x12 + 2x6-8", time: "1m30"},
-            {id: 'd2', name: "Elevação lateral halter", reps: "3x15 + drop", time: "Nec."},
-            {id: 'd3', name: "Elevação lateral máquina", reps: "3x12", time: "1m30"},
-            {id: 'd4', name: "Crucifixo inverso", reps: "3x15", time: "1m30"},
-            {id: 'd5', name: "Face pull", reps: "3x15", time: "1m30"},
-            {id: 'd6', name: "Tríceps francês polia", reps: "3x12", time: "1m30"},
-            {id: 'd7', name: "Rosca martelo", reps: "3x12", time: "1m30"}
+            {id: 'd1', name: "Desenvolvimento halteres", reps: "2x12 + 2x6-8", time: "1m30", tag: "Pesado"},
+            {id: 'd2', name: "Elevação lateral halter", reps: "3x15 + drop", time: "Nec.", tag: "Drop"},
+            {id: 'd3', name: "Elevação lateral máquina", reps: "3x12", time: "1m30", tag: ""},
+            {id: 'd4', name: "Crucifixo inverso", reps: "3x15", time: "1m30", tag: ""},
+            {id: 'd5', name: "Face pull", reps: "3x15", time: "1m30", tag: ""},
+            {id: 'd6', name: "Tríceps francês polia", reps: "3x12", time: "1m30", tag: ""},
+            {id: 'd7', name: "Rosca martelo", reps: "3x12", time: "1m30", tag: ""}
         ]},
         treinoE: { title: "Treino E - Posterior", exercises: [
-            {id: 'e1', name: "Levantamento terra", reps: "3x6-8", time: "Nec."},
-            {id: 'e2', name: "Mesa flexora", reps: "4x12", time: "1m30"},
-            {id: 'e3', name: "Elevação pélvica", reps: "3x12", time: "Nec."},
-            {id: 'e4', name: "Cadeira abdutora", reps: "3x13", time: "1m"},
-            {id: 'e5', name: "Afundo halteres", reps: "3x12", time: "1m"}
+            {id: 'e1', name: "Levantamento terra", reps: "3x6-8", time: "Nec.", tag: ""},
+            {id: 'e2', name: "Mesa flexora", reps: "4x12", time: "1m30", tag: ""},
+            {id: 'e3', name: "Elevação pélvica", reps: "3x12", time: "Nec.", tag: ""},
+            {id: 'e4', name: "Cadeira abdutora", reps: "3x13", time: "1m", tag: ""},
+            {id: 'e5', name: "Afundo halteres", reps: "3x12", time: "1m", tag: ""}
         ]}
     };
 
     let workouts = {};
 
     function init() {
-        const saved = localStorage.getItem('rafa_workout_v2');
+        const saved = localStorage.getItem('rafa_workout_v3');
         workouts = saved ? JSON.parse(saved) : defaultWorkouts;
         renderAll();
     }
@@ -152,7 +156,10 @@
                     <button class="btn-remove" onclick="removeEx('${key}', '${ex.id}')">✕</button>
                     <label class="custom-checkbox"><input type="checkbox" onchange="toggleCheck('${ex.id}', this)" ${isChecked ? 'checked' : ''}><span class="checkmark"></span></label>
                     <div class="ex-data">
-                        <a href="https://www.youtube.com/results?search_query=${encodeURIComponent(ex.name + ' execução')}" target="_blank" class="ex-name">${ex.name}</a>
+                        <div class="ex-header">
+                            <a href="https://www.youtube.com/results?search_query=${encodeURIComponent(ex.name + ' execução')}" target="_blank" class="ex-name">${ex.name}</a>
+                            ${ex.tag ? `<span class="tag">${ex.tag}</span>` : ''}
+                        </div>
                         <div class="ex-info">
                             <div class="info-item"><span class="info-label">Reps</span><span class="info-value">${ex.reps}</span></div>
                             <div class="info-item"><span class="info-label">Peso</span><input type="text" class="weight-input" value="${weight}" placeholder="0kg" onchange="saveWeight('${ex.id}', this.value)"></div>
@@ -173,13 +180,14 @@
         const name = prompt("Nome:"); if(!name) return;
         const reps = prompt("Séries/Reps:", "3x12");
         const time = prompt("Descanso:", "1m30");
-        workouts[key].exercises.push({id: 'ex_'+Date.now(), name, reps, time});
+        const tag = prompt("Tag (ex: Pesado, Drop ou deixe vazio):", "");
+        workouts[key].exercises.push({id: 'ex_'+Date.now(), name, reps, time, tag});
         saveData();
     }
 
     function removeEx(key, id) { if(confirm("Remover?")) { workouts[key].exercises = workouts[key].exercises.filter(ex => ex.id !== id); saveData(); } }
     
-    function saveData() { localStorage.setItem('rafa_workout_v2', JSON.stringify(workouts)); renderAll(); }
+    function saveData() { localStorage.setItem('rafa_workout_v3', JSON.stringify(workouts)); renderAll(); }
     function toggleCheck(id, el) { localStorage.setItem('check_'+id, el.checked); document.getElementById('card_'+id).classList.toggle('completed', el.checked); }
     function saveWeight(id, val) { localStorage.setItem('weight_'+id, val); }
 
@@ -192,7 +200,7 @@
 
     let timerInterval;
     function startTimer(t) {
-        if (t === 'Nec.') return;
+        if (t === 'Nec.' || t === 'Necessário') return;
         stopTimer();
         let sec = t.includes('m') ? parseInt(t.split('m')[0])*60 + (parseInt(t.split('m')[1])||0) : parseInt(t);
         const display = document.getElementById('timer-widget');
@@ -202,8 +210,10 @@
             if (sec <= 0) {
                 clearInterval(timerInterval);
                 display.style.background = 'var(--success)';
-                const ctx = new AudioContext(); const osc = ctx.createOscillator();
-                osc.connect(ctx.destination); osc.start(); osc.stop(ctx.currentTime + 0.2);
+                try {
+                    const ctx = new AudioContext(); const osc = ctx.createOscillator();
+                    osc.connect(ctx.destination); osc.start(); osc.stop(ctx.currentTime + 0.2);
+                } catch(e){}
                 setTimeout(stopTimer, 2000);
             }
         }, 1000);
