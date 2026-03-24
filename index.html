@@ -3,72 +3,115 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>App Treino</title>
+    <title>Training Pro</title>
     <meta name="mobile-web-app-capable" content="yes">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-color: #0f172a; --card-bg: #1e293b; --primary: #38bdf8;
-            --accent: #f472b6; --text-main: #f8fafc; --text-dim: #94a3b8;
-            --success: #4ade80; --border: #334155; --danger: #ef4444;
+            --bg-main: radial-gradient(circle at top right, #1e293b, #0f172a);
+            --header-bg: rgba(15, 23, 42, 0.9);
+            --card-bg: rgba(30, 41, 59, 0.6);
+            --text-main: #f8fafc;
+            --text-dim: #94a3b8;
+            --border: rgba(255, 255, 255, 0.08);
+            --primary: #38bdf8;
+            --accent: #f472b6;
+            --success: #4ade80;
+            --danger: #ef4444;
         }
 
-        body { font-family: 'Inter', sans-serif; background: var(--bg-color); color: var(--text-main); margin: 0; padding-bottom: 120px; display: flex; flex-direction: column; align-items: center; }
-        header { width: 100%; padding: 20px 0; text-align: center; background: #1e293b; border-bottom: 1px solid var(--border); position: relative; }
-        header h1 { margin: 0; font-size: 1.2rem; font-weight: 800; color: var(--primary); text-transform: uppercase; }
-        .settings-btn { position: absolute; right: 20px; top: 18px; font-size: 1.2rem; cursor: pointer; filter: grayscale(1); }
+        [data-theme="light"] {
+            --bg-main: radial-gradient(circle at top right, #f1f5f9, #e2e8f0);
+            --header-bg: rgba(255, 255, 255, 0.95);
+            --card-bg: rgba(255, 255, 255, 0.8);
+            --text-main: #1e293b;
+            --text-dim: #64748b;
+            --border: rgba(0, 0, 0, 0.1);
+            --primary: #0284c7;
+            --accent: #db2777;
+            --success: #16a34a;
+            --danger: #dc2626;
+        }
 
-        .tabs-container { position: sticky; top: 0; width: 100%; max-width: 500px; background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(10px); display: flex; z-index: 1000; border-bottom: 1px solid var(--border); }
-        .tab-btn { background: none; border: none; color: var(--text-dim); font-weight: 700; font-size: 1.1rem; padding: 15px; flex: 1; outline: none; }
-        .tab-btn.active { color: var(--primary); border-bottom: 3px solid var(--primary); }
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background: var(--bg-main);
+            color: var(--text-main); 
+            margin: 0; padding-bottom: 120px; 
+            min-height: 100vh;
+            transition: background 0.3s ease;
+        }
 
-        .container { width: 100%; max-width: 480px; padding: 20px; box-sizing: border-box; }
-        .workout-content { display: none; }
-        .workout-content.active { display: block; }
+        header { 
+            width: 100%; padding: 25px 0; text-align: center; 
+            background: var(--header-bg); backdrop-filter: blur(15px);
+            border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 1100;
+        }
+        header h1 { margin: 0; font-size: 1rem; font-weight: 800; letter-spacing: 2px; color: var(--primary); text-transform: uppercase; }
 
-        h2 { font-size: 0.9rem; color: var(--text-dim); text-transform: uppercase; margin: 10px 0 20px 0; display: flex; align-items: center; gap: 10px; }
-        h2::before { content: ''; width: 4px; height: 16px; background: var(--accent); border-radius: 4px; }
+        .tabs-container { width: 100%; max-width: 500px; display: flex; background: rgba(0,0,0,0.05); margin: 0 auto; border-bottom: 1px solid var(--border); }
+        .tab-btn { background: none; border: none; color: var(--text-dim); font-weight: 800; font-size: 1.1rem; padding: 18px; flex: 1; transition: 0.2s; cursor: pointer; }
+        .tab-btn.active { color: var(--primary); box-shadow: inset 0 -3px 0 var(--primary); }
 
-        .exercise-card { background: var(--card-bg); border-radius: 16px; padding: 18px; margin-bottom: 15px; border: 1px solid var(--border); display: flex; align-items: flex-start; gap: 12px; position: relative; transition: 0.3s; }
-        .exercise-card.completed { opacity: 0.3; filter: grayscale(1); }
+        .summary-card {
+            background: var(--card-bg); backdrop-filter: blur(12px);
+            border-radius: 20px; padding: 20px; margin: 20px auto 10px auto;
+            max-width: 480px; width: calc(100% - 40px); border: 1px solid var(--border);
+            text-align: center; box-sizing: border-box;
+        }
+        .summary-text { font-size: 0.85rem; font-weight: 800; margin-bottom: 12px; }
+        .summary-bar-bg { background: rgba(0,0,0,0.1); border-radius: 10px; height: 8px; width: 100%; overflow: hidden; }
+        .summary-bar-fill { background: var(--success); height: 100%; width: 0%; transition: width 0.5s ease; }
 
-        .btn-remove { display: none; position: absolute; right: -8px; top: -8px; background: var(--danger); color: white; border: none; border-radius: 50%; width: 24px; height: 24px; font-weight: bold; cursor: pointer; z-index: 10; }
+        .container { width: 100%; max-width: 480px; padding: 0 20px 20px 20px; box-sizing: border-box; margin: 0 auto; }
+        .workout-content { animation: slideUp 0.4s ease-out; }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+
+        h2 { font-size: 0.8rem; color: var(--text-dim); text-transform: uppercase; margin: 25px 0 15px 0; }
+
+        .exercise-card { 
+            background: var(--card-bg); backdrop-filter: blur(12px);
+            border-radius: 22px; padding: 22px; margin-bottom: 18px; 
+            border: 1px solid var(--border); border-left: 5px solid var(--primary); 
+            display: flex; align-items: flex-start; gap: 15px; position: relative; transition: all 0.3s ease;
+        }
+        .exercise-card.completed { opacity: 0.4; transform: scale(0.96); filter: grayscale(1); border-left-color: var(--success); }
+
+        .btn-remove { display: none; position: absolute; right: -8px; top: -8px; background: var(--danger); color: white; border: none; border-radius: 50%; width: 26px; height: 26px; font-weight: bold; cursor: pointer; z-index: 10; }
         .edit-mode .btn-remove { display: block; }
 
-        .custom-checkbox { min-width: 26px; height: 26px; position: relative; cursor: pointer; margin-top: 2px; }
+        .custom-checkbox { min-width: 30px; height: 30px; position: relative; cursor: pointer; }
         .custom-checkbox input { opacity: 0; width: 0; height: 0; }
-        .checkmark { position: absolute; top: 0; left: 0; height: 26px; width: 26px; border: 2px solid var(--border); border-radius: 50%; transition: 0.3s; }
+        .checkmark { position: absolute; top: 0; left: 0; height: 30px; width: 30px; border: 2px solid var(--border); border-radius: 12px; }
         .custom-checkbox input:checked ~ .checkmark { background: var(--success); border-color: var(--success); }
-        .checkmark:after { content: ""; position: absolute; display: none; left: 8px; top: 4px; width: 6px; height: 11px; border: solid white; border-width: 0 3px 3px 0; transform: rotate(45deg); }
+        .checkmark:after { content: ""; position: absolute; display: none; left: 10px; top: 5px; width: 6px; height: 11px; border: solid white; border-width: 0 3px 3px 0; transform: rotate(45deg); }
         .custom-checkbox input:checked ~ .checkmark:after { display: block; }
 
-        .ex-data { flex-grow: 1; }
-        .ex-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
-        .ex-name { font-weight: 600; font-size: 1rem; color: var(--text-main); text-decoration: none; padding-right: 5px; }
-        
-        .tag { font-size: 0.6rem; background: rgba(56, 189, 248, 0.1); color: var(--primary); padding: 2px 6px; border-radius: 4px; border: 1px solid var(--primary); text-transform: uppercase; font-weight: 800; white-space: nowrap; }
-
-        .ex-info { display: flex; gap: 12px; flex-wrap: wrap; }
-        .info-label { font-size: 0.55rem; color: var(--text-dim); text-transform: uppercase; display: block; margin-bottom: 2px; }
-        .info-value { font-size: 0.85rem; font-weight: 700; color: #fff; }
-        
+        .ex-name { font-weight: 800; font-size: 1.05rem; color: var(--text-main); text-decoration: none; display: block; margin-bottom: 12px; }
+        .info-label { font-size: 0.55rem; color: var(--text-dim); text-transform: uppercase; font-weight: 800; }
+        .info-value { font-size: 0.9rem; font-weight: 700; color: var(--text-main); }
         .timer-trigger { color: var(--accent); border-bottom: 1px dotted var(--accent); cursor: pointer; }
-        .weight-input { background: rgba(0,0,0,0.25); border: 1px solid var(--border); border-radius: 6px; color: var(--success); padding: 4px 8px; width: 65px; font-weight: 800; outline: none; }
+        .weight-input { background: rgba(0,0,0,0.1); border: 1px solid var(--border); border-radius: 8px; color: var(--success); padding: 5px; width: 55px; font-weight: 800; text-align: center; }
 
-        .btn-add { display: none; width: 100%; padding: 15px; background: transparent; border: 2px dashed var(--border); color: var(--text-dim); border-radius: 12px; font-weight: 600; cursor: pointer; margin-top: 10px; }
-        .edit-mode .btn-add { display: block; }
+        #timer-widget { position: fixed; bottom: 35px; left: 35px; width: 75px; height: 75px; background: var(--accent); border-radius: 50%; display: none; align-items: center; justify-content: center; font-weight: 800; font-size: 1.5rem; color: white; z-index: 2000; box-shadow: 0 10px 25px rgba(0,0,0,0.3); border: 4px solid rgba(255,255,255,0.2); }
 
-        #timer-widget { position: fixed; bottom: 30px; right: 30px; width: 70px; height: 70px; background: var(--accent); border-radius: 50%; display: none; align-items: center; justify-content: center; font-weight: 800; font-size: 1.4rem; color: white; z-index: 2000; box-shadow: 0 5px 15px rgba(244,114,182,0.4); }
+        .fab-container { position: fixed; bottom: 35px; right: 35px; z-index: 2000; display: flex; flex-direction: column; align-items: flex-end; }
+        .fab-menu { display: none; flex-direction: column; gap: 12px; margin-bottom: 15px; }
+        .fab-menu.show { display: flex; }
+        .fab-item { background: var(--card-bg); backdrop-filter: blur(15px); border: 1px solid var(--border); color: var(--text-main); padding: 12px 20px; border-radius: 25px; font-weight: 800; font-size: 0.85rem; cursor: pointer; box-shadow: 0 5px 15px rgba(0,0,0,0.2); white-space: nowrap; }
+        .fab-btn { width: 65px; height: 65px; background: var(--primary); color: white; border: none; border-radius: 50%; font-size: 2rem; cursor: pointer; box-shadow: 0 8px 25px rgba(0,0,0,0.3); transition: 0.3s; display: flex; align-items: center; justify-content: center; }
+        .fab-btn.active { transform: rotate(45deg); background: var(--danger); }
+
+        .empty-state { text-align: center; padding: 40px; color: var(--text-dim); }
     </style>
 </head>
 <body onload="init()">
 
 <header>
-    <h1>Treino</h1>
-    <div class="settings-btn" onclick="toggleEditMode()">⚙️</div>
+    <h1>TRAINING PRO</h1>
 </header>
 
-<div class="tabs-container" id="tabs">
+<div class="tabs-container">
     <button class="tab-btn active" onclick="showWorkout('treinoA', this)">A</button>
     <button class="tab-btn" onclick="showWorkout('treinoB', this)">B</button>
     <button class="tab-btn" onclick="showWorkout('treinoC', this)">C</button>
@@ -76,149 +119,275 @@
     <button class="tab-btn" onclick="showWorkout('treinoE', this)">E</button>
 </div>
 
-<div id="timer-widget" onclick="stopTimer()">00</div>
+<div class="summary-card">
+    <div class="summary-text" id="summary-text">A carregar...</div>
+    <div class="summary-bar-bg"><div class="summary-bar-fill" id="summary-bar-fill"></div></div>
+</div>
 
 <div class="container" id="main-container"></div>
+<div id="timer-widget" onclick="stopTimer()">00</div>
+
+<input type="file" id="import-file" style="display:none" onchange="importData(event)">
+
+<div class="fab-container">
+    <div class="fab-menu" id="fab-menu">
+        <div class="fab-item" onclick="exportData()">📥 Exportar Backup (Salvar)</div>
+        <div class="fab-item" onclick="document.getElementById('import-file').click()">📤 Importar Backup (Restaurar)</div>
+        <hr style="width:100%; border:0; border-top:1px solid var(--border); margin:4px 0;">
+        <div class="fab-item" onclick="toggleTheme()">🌓 Mudar Tema (Claro/Escuro)</div>
+        <div class="fab-item" onclick="fabReset()">🔄 Limpar Treino do Dia</div>
+        <div class="fab-item" onclick="fabEdit()">⚙️ Modo Edição (Remover)</div>
+        <div class="fab-item" onclick="fabAdd()" style="color: var(--primary);">➕ Novo Exercício</div>
+    </div>
+    <button class="fab-btn" id="fab-btn" onclick="toggleFab()">+</button>
+</div>
 
 <script>
     const defaultWorkouts = {
-        treinoA: { title: "Treino A - Peito", exercises: [
-            {id: 'a1', name: "Supino inclinado halteres", reps: "2x12 + 2x8", time: "1m30", tag: "Pesado"},
-            {id: 'a2', name: "Supino reto barra", reps: "4x12", time: "1m30", tag: ""},
-            {id: 'a3', name: "Voador", reps: "3x12 (2s iso)", time: "1m30", tag: ""},
-            {id: 'a4', name: "Crossover baixo", reps: "3x12", time: "1m30", tag: ""},
-            {id: 'a5', name: "Paralelas", reps: "3x máx", time: "1m30", tag: ""},
-            {id: 'a6', name: "Elevação lateral sentado", reps: "3x12 + 1", time: "1m30", tag: "Drop"},
-            {id: 'a7', name: "Tríceps testa halter", reps: "3x12", time: "1m30", tag: ""},
-            {id: 'a8', name: "Tríceps corda", reps: "2x12 + 1x10", time: "1m30", tag: "Drop"}
+        treinoA: { title: "Peito e Tríceps", exercises: [
+            {id: 'a1', name: "Supino inclinado halteres", reps: "2x12 + 2x8", time: "1m30"},
+            {id: 'a2', name: "Supino reto barra", reps: "4x12", time: "1m30"},
+            {id: 'a3', name: "Voador", reps: "3x12 (2s iso)", time: "1m30"},
+            {id: 'a4', name: "Crossover baixo", reps: "3x12", time: "1m30"},
+            {id: 'a5', name: "Paralelas", reps: "3x máx", time: "1m30"},
+            {id: 'a6', name: "Elevação lateral sentado", reps: "3x12 + 1 drop", time: "1m30"},
+            {id: 'a7', name: "Tríceps testa halter", reps: "3x12", time: "1m30"},
+            {id: 'a8', name: "Tríceps corda", reps: "2x12 + 1x10 drop", time: "1m30"}
         ]},
-        treinoB: { title: "Treino B - Costas", exercises: [
-            {id: 'b1', name: "Barra fixa pronada", reps: "40 reps", time: "1m30", tag: ""},
-            {id: 'b2', name: "Remada curvada", reps: "2x12 + 2x8", time: "Nec.", tag: "Pesado"},
-            {id: 'b3', name: "Puxador triângulo", reps: "3x15", time: "1m", tag: ""},
-            {id: 'b4', name: "Pulldown", reps: "4x12", time: "1m30", tag: ""},
-            {id: 'b5', name: "Remada baixa aberta", reps: "3x10 + 1", time: "1m30", tag: "Drop"},
-            {id: 'b6', name: "Rosca alternada", reps: "3x12", time: "1m", tag: ""},
-            {id: 'b7', name: "Rosca Scott máquina", reps: "3x12", time: "1m30", tag: ""},
-            {id: 'b8', name: "Encolhimento ombros", reps: "3x15", time: "Nec.", tag: ""}
+        treinoB: { title: "Costas e Bíceps", exercises: [
+            {id: 'b1', name: "Barra fixa pronada", reps: "40 reps totais", time: "1m30"},
+            {id: 'b2', name: "Remada curvada", reps: "2x12 + 2x8", time: "Nec."},
+            {id: 'b3', name: "Puxador triângulo", reps: "3x15", time: "1m"},
+            {id: 'b4', name: "Pulldown", reps: "4x12", time: "1m30"},
+            {id: 'b5', name: "Remada baixa aberta", reps: "3x10 + drop", time: "1m30"},
+            {id: 'b6', name: "Rosca alternada", reps: "3x12", time: "1m"},
+            {id: 'b7', name: "Rosca Scott máquina", reps: "3x12", time: "1m30"},
+            {id: 'b8', name: "Encolhimento ombros", reps: "3x15", time: "Nec."}
         ]},
-        treinoC: { title: "Treino C - Anterior", exercises: [
-            {id: 'c1', name: "Cadeira adutora", reps: "3x15", time: "1m30", tag: ""},
-            {id: 'c2', name: "Agachamento hack", reps: "3x10-12", time: "1m30", tag: ""},
-            {id: 'c3', name: "Leg 45°", reps: "2x12+2x8", time: "Nec.", tag: ""},
-            {id: 'c4', name: "Cadeira extensora", reps: "3x15 + drop", time: "1m30", tag: "Drop"},
-            {id: 'c5', name: "Stiff", reps: "4x12", time: "1m30", tag: ""},
-            {id: 'c6', name: "Panturrilha em pé", reps: "3x falha", time: "1m30", tag: ""},
-            {id: 'c7', name: "Panturrilha sentada", reps: "3x falha", time: "1m30", tag: ""}
+        treinoC: { title: "Perna Anterior", exercises: [
+            {id: 'c1', name: "Cadeira adutora", reps: "3x15", time: "1m30"},
+            {id: 'c2', name: "Agachamento hack", reps: "3x10-12", time: "1m30"},
+            {id: 'c3', name: "Leg 45°", reps: "2x12 + 2x8", time: "Nec."},
+            {id: 'c4', name: "Cadeira extensora", reps: "3x15 + drop", time: "1m30"},
+            {id: 'c5', name: "Stiff", reps: "4x12", time: "1m30"},
+            {id: 'c6', name: "Panturrilha em pé", reps: "3x falha", time: "1m30"},
+            {id: 'c7', name: "Panturrilha sentada", reps: "3x falha", time: "1m30"}
         ]},
-        treinoD: { title: "Treino D - Ombro", exercises: [
-            {id: 'd1', name: "Desenvolvimento halteres", reps: "2x12 + 2x6-8", time: "1m30", tag: "Pesado"},
-            {id: 'd2', name: "Elevação lateral halter", reps: "3x15 + drop", time: "Nec.", tag: "Drop"},
-            {id: 'd3', name: "Elevação lateral máquina", reps: "3x12", time: "1m30", tag: ""},
-            {id: 'd4', name: "Crucifixo inverso", reps: "3x15", time: "1m30", tag: ""},
-            {id: 'd5', name: "Face pull", reps: "3x15", time: "1m30", tag: ""},
-            {id: 'd6', name: "Tríceps francês polia", reps: "3x12", time: "1m30", tag: ""},
-            {id: 'd7', name: "Rosca martelo", reps: "3x12", time: "1m30", tag: ""}
+        treinoD: { title: "Ombros e Braços", exercises: [
+            {id: 'd1', name: "Desenvolvimento halteres", reps: "2x12 + 2x8", time: "1m30"},
+            {id: 'd2', name: "Elevação lateral halter", reps: "3x15 + drop", time: "Nec."},
+            {id: 'd3', name: "Elevação lateral máquina", reps: "3x12", time: "1m30"},
+            {id: 'd4', name: "Crucifixo inverso", reps: "3x15", time: "1m30"},
+            {id: 'd5', name: "Face pull", reps: "3x15", time: "1m30"},
+            {id: 'd6', name: "Tríceps francês polia", reps: "3x12", time: "1m30"},
+            {id: 'd7', name: "Rosca martelo", reps: "3x12", time: "1m30"}
         ]},
-        treinoE: { title: "Treino E - Posterior", exercises: [
-            {id: 'e1', name: "Levantamento terra", reps: "3x6-8", time: "Nec.", tag: ""},
-            {id: 'e2', name: "Mesa flexora", reps: "4x12", time: "1m30", tag: ""},
-            {id: 'e3', name: "Elevação pélvica", reps: "3x12", time: "Nec.", tag: ""},
-            {id: 'e4', name: "Cadeira abdutora", reps: "3x13", time: "1m", tag: ""},
-            {id: 'e5', name: "Afundo halteres", reps: "3x12", time: "1m", tag: ""}
+        treinoE: { title: "Perna Posterior", exercises: [
+            {id: 'e1', name: "Levantamento terra", reps: "3x6-8", time: "Nec."},
+            {id: 'e2', name: "Mesa flexora", reps: "4x12", time: "1m30"},
+            {id: 'e3', name: "Elevação pélvica", reps: "3x12", time: "Nec."},
+            {id: 'e4', name: "Cadeira abdutora", reps: "3x13", time: "1m"},
+            {id: 'e5', name: "Afundo halteres", reps: "3x12", time: "1m"}
         ]}
     };
 
-    let workouts = {};
+    let workoutData = {};
 
     function init() {
-        const saved = localStorage.getItem('rafa_workout_v3');
-        workouts = saved ? JSON.parse(saved) : defaultWorkouts;
+        const theme = localStorage.getItem('app_theme') || 'dark';
+        document.body.setAttribute('data-theme', theme);
+
+        const saved = localStorage.getItem('app_workout_data');
+        workoutData = saved ? JSON.parse(saved) : defaultWorkouts;
+        
+        checkAutoReset();
         renderAll();
+    }
+
+    function checkAutoReset() {
+        const lastActive = localStorage.getItem('app_last_active');
+        if (lastActive && (Date.now() - parseInt(lastActive)) > (12 * 60 * 60 * 1000)) {
+            Object.keys(workoutData).forEach(k => {
+                workoutData[k].exercises.forEach(ex => localStorage.setItem('check_'+ex.id, 'false'));
+            });
+            localStorage.removeItem('app_last_active');
+        }
     }
 
     function renderAll() {
         const container = document.getElementById('main-container');
-        container.innerHTML = '';
-        const currentActive = document.querySelector('.tab-btn.active')?.innerText || 'A';
+        const activeTab = document.querySelector('.tab-btn.active').innerText;
+        const key = 'treino' + activeTab;
+        const exercises = workoutData[key].exercises;
         
-        for (let key in workouts) {
-            let section = document.createElement('div');
-            section.id = key;
-            section.className = `workout-content ${key.endsWith(currentActive) ? 'active' : ''}`;
-            
-            let html = `<h2>${workouts[key].title}</h2>`;
-            workouts[key].exercises.forEach(ex => {
+        let html = `<h2>${workoutData[key].title}</h2>`;
+        if (exercises.length === 0) {
+            html += `<div class="empty-state"><span>🧘‍♂️</span><p>Nenhum exercício adicionado.</p></div>`;
+        } else {
+            exercises.forEach(ex => {
                 const isChecked = localStorage.getItem('check_'+ex.id) === 'true';
                 const weight = localStorage.getItem('weight_'+ex.id) || '';
                 html += `
                 <div class="exercise-card ${isChecked ? 'completed' : ''}" id="card_${ex.id}">
                     <button class="btn-remove" onclick="removeEx('${key}', '${ex.id}')">✕</button>
-                    <label class="custom-checkbox"><input type="checkbox" onchange="toggleCheck('${ex.id}', this)" ${isChecked ? 'checked' : ''}><span class="checkmark"></span></label>
-                    <div class="ex-data">
-                        <div class="ex-header">
-                            <a href="https://www.youtube.com/results?search_query=${encodeURIComponent(ex.name + ' execução')}" target="_blank" class="ex-name">${ex.name}</a>
-                            ${ex.tag ? `<span class="tag">${ex.tag}</span>` : ''}
-                        </div>
-                        <div class="ex-info">
-                            <div class="info-item"><span class="info-label">Reps</span><span class="info-value">${ex.reps}</span></div>
-                            <div class="info-item"><span class="info-label">Peso</span><input type="text" class="weight-input" value="${weight}" placeholder="0kg" onchange="saveWeight('${ex.id}', this.value)"></div>
-                            <div class="info-item"><span class="info-label">Tempo</span><span class="info-value ${ex.time !== 'Nec.' ? 'timer-trigger' : ''}" onclick="startTimer('${ex.time}')">${ex.time}</span></div>
+                    <label class="custom-checkbox">
+                        <input type="checkbox" onchange="toggleCheck('${ex.id}', this)" ${isChecked ? 'checked' : ''}>
+                        <span class="checkmark"></span>
+                    </label>
+                    <div style="flex-grow:1">
+                        <span class="ex-name">${ex.name}</span>
+                        <div style="display:flex; gap:20px">
+                            <div><span class="info-label">Séries</span><br><span class="info-value">${ex.reps}</span></div>
+                            <div><span class="info-label">Peso</span><br><input type="text" class="weight-input" value="${weight}" onchange="saveWeight('${ex.id}', this.value)" placeholder="0kg"></div>
+                            <div><span class="info-label">Pausa</span><br><span class="info-value ${ex.time !== 'Nec.' ? 'timer-trigger' : ''}" onclick="startTimer('${ex.time}')">${ex.time}</span></div>
                         </div>
                     </div>
                 </div>`;
             });
-            html += `<button class="btn-add" onclick="addEx('${key}')">+ Adicionar Exercício</button>`;
-            section.innerHTML = html;
-            container.appendChild(section);
         }
+        container.innerHTML = html;
+        updateProgressBar();
     }
 
-    function toggleEditMode() { document.body.classList.toggle('edit-mode'); }
+    function toggleCheck(id, el) {
+        localStorage.setItem('check_'+id, el.checked);
+        if(el.checked) localStorage.setItem('app_last_active', Date.now());
+        document.getElementById('card_'+id).classList.toggle('completed', el.checked);
+        updateProgressBar();
+    }
 
-    function addEx(key) {
-        const name = prompt("Nome:"); if(!name) return;
-        const reps = prompt("Séries/Reps:", "3x12");
-        const time = prompt("Descanso:", "1m30");
-        const tag = prompt("Tag (ex: Pesado, Drop ou deixe vazio):", "");
-        workouts[key].exercises.push({id: 'ex_'+Date.now(), name, reps, time, tag});
+    function updateProgressBar() {
+        const activeTab = document.querySelector('.tab-btn.active').innerText;
+        const exes = workoutData['treino' + activeTab].exercises;
+        const checked = exes.filter(ex => localStorage.getItem('check_'+ex.id) === 'true').length;
+        const percent = exes.length > 0 ? Math.round((checked / exes.length) * 100) : 0;
+        document.getElementById('summary-text').innerText = `${checked} de ${exes.length} concluídos (${percent}%)`;
+        document.getElementById('summary-bar-fill').style.width = percent + '%';
+    }
+
+    function toggleFab() { 
+        document.getElementById('fab-menu').classList.toggle('show'); 
+        document.getElementById('fab-btn').classList.toggle('active');
+    }
+
+    function toggleTheme() {
+        const current = document.body.getAttribute('data-theme');
+        const next = current === 'dark' ? 'light' : 'dark';
+        document.body.setAttribute('data-theme', next);
+        localStorage.setItem('app_theme', next);
+        toggleFab();
+    }
+
+    function fabReset() {
+        const activeTab = document.querySelector('.tab-btn.active').innerText;
+        if(confirm("Limpar progresso de hoje?")) {
+            workoutData['treino' + activeTab].exercises.forEach(ex => localStorage.setItem('check_'+ex.id, 'false'));
+            renderAll();
+        }
+        toggleFab();
+    }
+
+    function fabEdit() { document.body.classList.toggle('edit-mode'); toggleFab(); }
+
+    function fabAdd() {
+        const activeTab = document.querySelector('.tab-btn.active').innerText;
+        const name = prompt("Nome do exercício:");
+        if(name) {
+            workoutData['treino' + activeTab].exercises.push({
+                id: 'custom_' + Date.now(),
+                name: name,
+                reps: prompt("Séries/Reps:", "3x12"),
+                time: prompt("Pausa:", "1m30")
+            });
+            saveData();
+        }
+        toggleFab();
+    }
+
+    function removeEx(key, id) {
+        workoutData[key].exercises = workoutData[key].exercises.filter(ex => ex.id !== id);
         saveData();
     }
 
-    function removeEx(key, id) { if(confirm("Remover?")) { workouts[key].exercises = workouts[key].exercises.filter(ex => ex.id !== id); saveData(); } }
-    
-    function saveData() { localStorage.setItem('rafa_workout_v3', JSON.stringify(workouts)); renderAll(); }
-    function toggleCheck(id, el) { localStorage.setItem('check_'+id, el.checked); document.getElementById('card_'+id).classList.toggle('completed', el.checked); }
-    function saveWeight(id, val) { localStorage.setItem('weight_'+id, val); }
-
-    function showWorkout(id, btn) {
-        document.querySelectorAll('.workout-content').forEach(c => c.classList.remove('active'));
+    function showWorkout(tab, btn) {
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-        document.getElementById(id).classList.add('active');
         btn.classList.add('active');
+        renderAll();
     }
 
-    let timerInterval;
+    function saveWeight(id, val) { localStorage.setItem('weight_'+id, val); }
+    function saveData() { localStorage.setItem('app_workout_data', JSON.stringify(workoutData)); renderAll(); }
+
+    // --- NOVAS FUNÇÕES DE EXPORTAÇÃO E IMPORTAÇÃO ---
+
+    function exportData() {
+        // Coleta todos os pesos salvos individualmente no localStorage
+        const weights = {};
+        for(let i=0; i<localStorage.length; i++){
+            let key = localStorage.key(i);
+            if(key.startsWith('weight_')) weights[key] = localStorage.getItem(key);
+        }
+
+        const fullBackup = {
+            workoutData: workoutData,
+            weights: weights,
+            theme: localStorage.getItem('app_theme'),
+            date: new Date().toLocaleDateString()
+        };
+
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(fullBackup));
+        const downloadAnchorNode = document.createElement('a');
+        downloadAnchorNode.setAttribute("href", dataStr);
+        downloadAnchorNode.setAttribute("download", "backup_treino.json");
+        document.body.appendChild(downloadAnchorNode);
+        downloadAnchorNode.click();
+        downloadAnchorNode.remove();
+        toggleFab();
+    }
+
+    function importData(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const imported = JSON.parse(e.target.result);
+                
+                // Restaura os pesos
+                if(imported.weights) {
+                    Object.keys(imported.weights).forEach(k => localStorage.setItem(k, imported.weights[k]));
+                }
+                
+                // Restaura os treinos
+                if(imported.workoutData) {
+                    workoutData = imported.workoutData;
+                    saveData();
+                }
+
+                alert("Backup restaurado com sucesso!");
+                location.reload();
+            } catch (err) {
+                alert("Erro ao ler o ficheiro. Certifica-te que é um backup válido.");
+            }
+        };
+        reader.readAsText(file);
+    }
+
+    // --- TIMER ---
+    let timer;
     function startTimer(t) {
-        if (t === 'Nec.' || t === 'Necessário') return;
+        if(t === 'Nec.') return;
         stopTimer();
         let sec = t.includes('m') ? parseInt(t.split('m')[0])*60 + (parseInt(t.split('m')[1])||0) : parseInt(t);
-        const display = document.getElementById('timer-widget');
-        display.style.display = 'flex';
-        timerInterval = setInterval(() => {
-            sec--; display.innerText = sec;
-            if (sec <= 0) {
-                clearInterval(timerInterval);
-                display.style.background = 'var(--success)';
-                try {
-                    const ctx = new AudioContext(); const osc = ctx.createOscillator();
-                    osc.connect(ctx.destination); osc.start(); osc.stop(ctx.currentTime + 0.2);
-                } catch(e){}
-                setTimeout(stopTimer, 2000);
-            }
+        const widget = document.getElementById('timer-widget');
+        widget.style.display = 'flex';
+        timer = setInterval(() => {
+            sec--; widget.innerText = sec;
+            if(sec <= 0) { clearInterval(timer); widget.style.background = 'var(--success)'; setTimeout(stopTimer, 2000); }
         }, 1000);
     }
-    function stopTimer() { clearInterval(timerInterval); document.getElementById('timer-widget').style.display = 'none'; document.getElementById('timer-widget').style.background = 'var(--accent)'; }
+    function stopTimer() { clearInterval(timer); document.getElementById('timer-widget').style.display = 'none'; document.getElementById('timer-widget').style.background = 'var(--accent)'; }
 </script>
 </body>
 </html>
