@@ -49,9 +49,24 @@
         }
         header h1 { margin: 0; font-size: 1rem; font-weight: 800; letter-spacing: 2px; color: var(--primary); text-transform: uppercase; }
 
-        .tabs-container { width: 100%; max-width: 500px; display: flex; background: rgba(0,0,0,0.05); margin: 0 auto; border-bottom: 1px solid var(--border); }
-        .tab-btn { background: none; border: none; color: var(--text-dim); font-weight: 800; font-size: 1.1rem; padding: 18px; flex: 1; transition: 0.2s; cursor: pointer; }
+        /* TABS E GESTÃO */
+        #tabs-wrapper { width: 100%; max-width: 500px; margin: 0 auto; border-bottom: 1px solid var(--border); }
+        .tabs-container { display: flex; background: rgba(0,0,0,0.05); }
+        
+        .tab-btn-wrapper { position: relative; flex: 1; display: flex; }
+        .tab-btn { background: none; border: none; color: var(--text-dim); font-weight: 800; font-size: 1.1rem; padding: 18px; width: 100%; transition: 0.2s; cursor: pointer; }
         .tab-btn.active { color: var(--primary); box-shadow: inset 0 -3px 0 var(--primary); }
+        
+        .btn-tab-manage {
+            position: absolute; top: 2px; right: 2px; background: var(--danger); color: white;
+            border: none; border-radius: 50%; width: 18px; height: 18px; font-size: 10px;
+            cursor: pointer; display: none; z-index: 5; font-weight: bold;
+        }
+        .edit-mode .btn-tab-manage { display: block; }
+        
+        .tab-controls { display: none; justify-content: center; padding: 10px; background: rgba(0,0,0,0.1); }
+        .edit-mode .tab-controls { display: flex; }
+        .btn-add-tab { background: var(--card-bg); border: 1px dashed var(--primary); color: var(--primary); padding: 5px 15px; border-radius: 10px; font-weight: 800; cursor: pointer; font-size: 0.8rem; }
 
         .summary-card {
             background: var(--card-bg); backdrop-filter: blur(12px);
@@ -64,10 +79,7 @@
         .summary-bar-fill { background: var(--success); height: 100%; width: 0%; transition: width 0.5s ease; }
 
         .container { width: 100%; max-width: 480px; padding: 0 20px 20px 20px; box-sizing: border-box; margin: 0 auto; }
-        .workout-content { animation: slideUp 0.4s ease-out; }
-        @keyframes slideUp { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
-
-        h2 { font-size: 0.8rem; color: var(--text-dim); text-transform: uppercase; margin: 25px 0 15px 0; }
+        h2 { font-size: 0.8rem; color: var(--text-dim); text-transform: uppercase; margin: 25px 0 15px 0; display: flex; align-items: center; justify-content: space-between; }
 
         .exercise-card { 
             background: var(--card-bg); backdrop-filter: blur(12px);
@@ -87,7 +99,7 @@
         .checkmark:after { content: ""; position: absolute; display: none; left: 10px; top: 5px; width: 6px; height: 11px; border: solid white; border-width: 0 3px 3px 0; transform: rotate(45deg); }
         .custom-checkbox input:checked ~ .checkmark:after { display: block; }
 
-        .ex-name { font-weight: 800; font-size: 1.05rem; color: var(--text-main); text-decoration: none; display: block; margin-bottom: 12px; }
+        .ex-name { font-weight: 800; font-size: 1.05rem; color: var(--text-main); display: block; margin-bottom: 12px; }
         .info-label { font-size: 0.55rem; color: var(--text-dim); text-transform: uppercase; font-weight: 800; }
         .info-value { font-size: 0.9rem; font-weight: 700; color: var(--text-main); }
         .timer-trigger { color: var(--accent); border-bottom: 1px dotted var(--accent); cursor: pointer; }
@@ -101,7 +113,7 @@
         .fab-item { background: var(--card-bg); backdrop-filter: blur(15px); border: 1px solid var(--border); color: var(--text-main); padding: 12px 20px; border-radius: 25px; font-weight: 800; font-size: 0.85rem; cursor: pointer; box-shadow: 0 5px 15px rgba(0,0,0,0.2); white-space: nowrap; }
         .fab-btn { width: 65px; height: 65px; background: var(--primary); color: white; border: none; border-radius: 50%; font-size: 2rem; cursor: pointer; box-shadow: 0 8px 25px rgba(0,0,0,0.3); transition: 0.3s; display: flex; align-items: center; justify-content: center; }
         .fab-btn.active { transform: rotate(45deg); background: var(--danger); }
-
+        
         .empty-state { text-align: center; padding: 40px; color: var(--text-dim); }
     </style>
 </head>
@@ -111,16 +123,15 @@
     <h1>TRAINING PRO</h1>
 </header>
 
-<div class="tabs-container">
-    <button class="tab-btn active" onclick="showWorkout('treinoA', this)">A</button>
-    <button class="tab-btn" onclick="showWorkout('treinoB', this)">B</button>
-    <button class="tab-btn" onclick="showWorkout('treinoC', this)">C</button>
-    <button class="tab-btn" onclick="showWorkout('treinoD', this)">D</button>
-    <button class="tab-btn" onclick="showWorkout('treinoE', this)">E</button>
+<div id="tabs-wrapper">
+    <div class="tabs-container" id="tabs-list"></div>
+    <div class="tab-controls">
+        <button class="btn-add-tab" onclick="addTab()">+ Nova Aba</button>
+    </div>
 </div>
 
 <div class="summary-card">
-    <div class="summary-text" id="summary-text">A carregar...</div>
+    <div class="summary-text" id="summary-text">Carregando...</div>
     <div class="summary-bar-bg"><div class="summary-bar-fill" id="summary-bar-fill"></div></div>
 </div>
 
@@ -142,9 +153,10 @@
     <button class="fab-btn" id="fab-btn" onclick="toggleFab()">+</button>
 </div>
 
+
 <script>
     const defaultWorkouts = {
-        treinoA: { title: "Peito e Tríceps", exercises: [
+        treinoA: { label: "A", title: "Peito e Tríceps", exercises: [
             {id: 'a1', name: "Supino inclinado halteres", reps: "2x12 + 2x8", time: "1m30"},
             {id: 'a2', name: "Supino reto barra", reps: "4x12", time: "1m30"},
             {id: 'a3', name: "Voador", reps: "3x12 (2s iso)", time: "1m30"},
@@ -154,82 +166,90 @@
             {id: 'a7', name: "Tríceps testa halter", reps: "3x12", time: "1m30"},
             {id: 'a8', name: "Tríceps corda", reps: "2x12 + 1x10 drop", time: "1m30"}
         ]},
-        treinoB: { title: "Costas e Bíceps", exercises: [
+        treinoB: { label: "B", title: "Costas e Bíceps", exercises: [
             {id: 'b1', name: "Barra fixa pronada", reps: "40 reps totais", time: "1m30"},
             {id: 'b2', name: "Remada curvada", reps: "2x12 + 2x8", time: "Nec."},
             {id: 'b3', name: "Puxador triângulo", reps: "3x15", time: "1m"},
             {id: 'b4', name: "Pulldown", reps: "4x12", time: "1m30"},
             {id: 'b5', name: "Remada baixa aberta", reps: "3x10 + drop", time: "1m30"},
             {id: 'b6', name: "Rosca alternada", reps: "3x12", time: "1m"},
-            {id: 'b7', name: "Rosca Scott máquina", reps: "3x12", time: "1m30"},
-            {id: 'b8', name: "Encolhimento ombros", reps: "3x15", time: "Nec."}
+            {id: 'b7', name: "Rosca Scott máquina", reps: "3x12", time: "1m30"}
         ]},
-        treinoC: { title: "Perna Anterior", exercises: [
+        treinoC: { label: "C", title: "Perna Anterior", exercises: [
             {id: 'c1', name: "Cadeira adutora", reps: "3x15", time: "1m30"},
             {id: 'c2', name: "Agachamento hack", reps: "3x10-12", time: "1m30"},
             {id: 'c3', name: "Leg 45°", reps: "2x12 + 2x8", time: "Nec."},
             {id: 'c4', name: "Cadeira extensora", reps: "3x15 + drop", time: "1m30"},
             {id: 'c5', name: "Stiff", reps: "4x12", time: "1m30"},
-            {id: 'c6', name: "Panturrilha em pé", reps: "3x falha", time: "1m30"},
-            {id: 'c7', name: "Panturrilha sentada", reps: "3x falha", time: "1m30"}
+            {id: 'c6', name: "Panturrilha em pé", reps: "3x falha", time: "1m30"}
         ]},
-        treinoD: { title: "Ombros e Braços", exercises: [
+        treinoD: { label: "D", title: "Ombros e Braços", exercises: [
             {id: 'd1', name: "Desenvolvimento halteres", reps: "2x12 + 2x8", time: "1m30"},
             {id: 'd2', name: "Elevação lateral halter", reps: "3x15 + drop", time: "Nec."},
             {id: 'd3', name: "Elevação lateral máquina", reps: "3x12", time: "1m30"},
             {id: 'd4', name: "Crucifixo inverso", reps: "3x15", time: "1m30"},
-            {id: 'd5', name: "Face pull", reps: "3x15", time: "1m30"},
-            {id: 'd6', name: "Tríceps francês polia", reps: "3x12", time: "1m30"},
-            {id: 'd7', name: "Rosca martelo", reps: "3x12", time: "1m30"}
+            {id: 'd5', name: "Face pull", reps: "3x15", time: "1m30"}
         ]},
-        treinoE: { title: "Perna Posterior", exercises: [
+        treinoE: { label: "E", title: "Perna Posterior", exercises: [
             {id: 'e1', name: "Levantamento terra", reps: "3x6-8", time: "Nec."},
             {id: 'e2', name: "Mesa flexora", reps: "4x12", time: "1m30"},
             {id: 'e3', name: "Elevação pélvica", reps: "3x12", time: "Nec."},
-            {id: 'e4', name: "Cadeira abdutora", reps: "3x13", time: "1m"},
-            {id: 'e5', name: "Afundo halteres", reps: "3x12", time: "1m"}
+            {id: 'e4', name: "Afundo halteres", reps: "3x12", time: "1m"}
         ]}
     };
 
     let workoutData = {};
+    let currentTabKey = 'treinoA';
 
     function init() {
         const theme = localStorage.getItem('app_theme') || 'dark';
         document.body.setAttribute('data-theme', theme);
-
         const saved = localStorage.getItem('app_workout_data');
         workoutData = saved ? JSON.parse(saved) : defaultWorkouts;
         
+        // Garante label em todos
+        Object.keys(workoutData).forEach(k => { if(!workoutData[k].label) workoutData[k].label = k.replace('treino', ''); });
+        
+        currentTabKey = Object.keys(workoutData)[0];
         checkAutoReset();
+        renderTabs();
         renderAll();
     }
 
-    function checkAutoReset() {
-        const lastActive = localStorage.getItem('app_last_active');
-        if (lastActive && (Date.now() - parseInt(lastActive)) > (12 * 60 * 60 * 1000)) {
-            Object.keys(workoutData).forEach(k => {
-                workoutData[k].exercises.forEach(ex => localStorage.setItem('check_'+ex.id, 'false'));
-            });
-            localStorage.removeItem('app_last_active');
-        }
+    function renderTabs() {
+        const list = document.getElementById('tabs-list');
+        let html = '';
+        Object.keys(workoutData).forEach(key => {
+            const isActive = key === currentTabKey ? 'active' : '';
+            html += `
+                <div class="tab-btn-wrapper">
+                    <button class="btn-tab-manage" onclick="deleteTab('${key}')">✕</button>
+                    <button class="tab-btn ${isActive}" 
+                            onclick="showWorkout('${key}', this)" 
+                            oncontextmenu="renameTab('${key}'); return false;">
+                        ${workoutData[key].label}
+                    </button>
+                </div>`;
+        });
+        list.innerHTML = html;
     }
 
     function renderAll() {
         const container = document.getElementById('main-container');
-        const activeTab = document.querySelector('.tab-btn.active').innerText;
-        const key = 'treino' + activeTab;
-        const exercises = workoutData[key].exercises;
+        const data = workoutData[currentTabKey];
+        if(!data) return;
+
+        let html = `<h2>${data.title} <span onclick="editTitle()" style="cursor:pointer; opacity:0.5; font-size:12px">✏️</span></h2>`;
         
-        let html = `<h2>${workoutData[key].title}</h2>`;
-        if (exercises.length === 0) {
-            html += `<div class="empty-state"><span>🧘‍♂️</span><p>Nenhum exercício adicionado.</p></div>`;
+        if (data.exercises.length === 0) {
+            html += `<div class="empty-state"><span>🧘‍♂️</span><p>Nenhum exercício.</p></div>`;
         } else {
-            exercises.forEach(ex => {
+            data.exercises.forEach(ex => {
                 const isChecked = localStorage.getItem('check_'+ex.id) === 'true';
                 const weight = localStorage.getItem('weight_'+ex.id) || '';
                 html += `
                 <div class="exercise-card ${isChecked ? 'completed' : ''}" id="card_${ex.id}">
-                    <button class="btn-remove" onclick="removeEx('${key}', '${ex.id}')">✕</button>
+                    <button class="btn-remove" onclick="removeEx('${currentTabKey}', '${ex.id}')">✕</button>
                     <label class="custom-checkbox">
                         <input type="checkbox" onchange="toggleCheck('${ex.id}', this)" ${isChecked ? 'checked' : ''}>
                         <span class="checkmark"></span>
@@ -249,6 +269,46 @@
         updateProgressBar();
     }
 
+    function showWorkout(key, btn) {
+        currentTabKey = key;
+        renderTabs();
+        renderAll();
+    }
+
+    function addTab() {
+        const name = prompt("Nome da aba (ex: F, Cardio):");
+        if(name) {
+            const id = 'treino' + Date.now();
+            workoutData[id] = { label: name.toUpperCase().substring(0, 8), title: "Novo Treino", exercises: [] };
+            saveData();
+            currentTabKey = id;
+            renderTabs();
+            renderAll();
+        }
+    }
+
+    function renameTab(key) {
+        if(!document.body.classList.contains('edit-mode')) return;
+        const n = prompt("Novo nome da aba:", workoutData[key].label);
+        if(n) { workoutData[key].label = n.toUpperCase().substring(0, 8); saveData(); renderTabs(); }
+    }
+
+    function deleteTab(key) {
+        if(Object.keys(workoutData).length <= 1) return alert("Mantenha ao menos um treino.");
+        if(confirm(`Excluir aba "${workoutData[key].label}"?`)) {
+            delete workoutData[key];
+            currentTabKey = Object.keys(workoutData)[0];
+            saveData();
+            renderTabs();
+            renderAll();
+        }
+    }
+
+    function editTitle() {
+        const t = prompt("Novo título do treino:", workoutData[currentTabKey].title);
+        if(t) { workoutData[currentTabKey].title = t; saveData(); renderAll(); }
+    }
+
     function toggleCheck(id, el) {
         localStorage.setItem('check_'+id, el.checked);
         if(el.checked) localStorage.setItem('app_last_active', Date.now());
@@ -257,8 +317,7 @@
     }
 
     function updateProgressBar() {
-        const activeTab = document.querySelector('.tab-btn.active').innerText;
-        const exes = workoutData['treino' + activeTab].exercises;
+        const exes = workoutData[currentTabKey].exercises;
         const checked = exes.filter(ex => localStorage.getItem('check_'+ex.id) === 'true').length;
         const percent = exes.length > 0 ? Math.round((checked / exes.length) * 100) : 0;
         document.getElementById('summary-text').innerText = `${checked} de ${exes.length} concluídos (${percent}%)`;
@@ -270,111 +329,62 @@
         document.getElementById('fab-btn').classList.toggle('active');
     }
 
-    function toggleTheme() {
-        const current = document.body.getAttribute('data-theme');
-        const next = current === 'dark' ? 'light' : 'dark';
-        document.body.setAttribute('data-theme', next);
-        localStorage.setItem('app_theme', next);
-        toggleFab();
+    function fabEdit() { 
+        document.body.classList.toggle('edit-mode'); 
+        document.getElementById('edit-fab-text').innerText = document.body.classList.contains('edit-mode') ? "✅ Sair Edição" : "⚙️ Modo Edição";
+        toggleFab(); 
     }
-
-    function fabReset() {
-        const activeTab = document.querySelector('.tab-btn.active').innerText;
-        if(confirm("Limpar progresso de hoje?")) {
-            workoutData['treino' + activeTab].exercises.forEach(ex => localStorage.setItem('check_'+ex.id, 'false'));
-            renderAll();
-        }
-        toggleFab();
-    }
-
-    function fabEdit() { document.body.classList.toggle('edit-mode'); toggleFab(); }
 
     function fabAdd() {
-        const activeTab = document.querySelector('.tab-btn.active').innerText;
         const name = prompt("Nome do exercício:");
         if(name) {
-            workoutData['treino' + activeTab].exercises.push({
-                id: 'custom_' + Date.now(),
-                name: name,
-                reps: prompt("Séries/Reps:", "3x12"),
-                time: prompt("Pausa:", "1m30")
-            });
+            workoutData[currentTabKey].exercises.push({ id: 'ex_'+Date.now(), name, reps: prompt("Reps:", "3x12"), time: prompt("Pausa:", "1m30") });
             saveData();
         }
         toggleFab();
     }
 
-    function removeEx(key, id) {
-        workoutData[key].exercises = workoutData[key].exercises.filter(ex => ex.id !== id);
-        saveData();
+    function fabReset() {
+        if(confirm("Limpar progresso?")) {
+            workoutData[currentTabKey].exercises.forEach(ex => localStorage.setItem('check_'+ex.id, 'false'));
+            renderAll();
+        }
+        toggleFab();
     }
 
-    function showWorkout(tab, btn) {
-        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        renderAll();
-    }
-
+    function removeEx(key, id) { workoutData[key].exercises = workoutData[key].exercises.filter(ex => ex.id !== id); saveData(); }
     function saveWeight(id, val) { localStorage.setItem('weight_'+id, val); }
-    function saveData() { localStorage.setItem('app_workout_data', JSON.stringify(workoutData)); renderAll(); }
+    function saveData() { localStorage.setItem('app_workout_data', JSON.stringify(workoutData)); }
 
-    // --- NOVAS FUNÇÕES DE EXPORTAÇÃO E IMPORTAÇÃO ---
+    function toggleTheme() {
+        const next = document.body.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+        document.body.setAttribute('data-theme', next);
+        localStorage.setItem('app_theme', next);
+        toggleFab();
+    }
 
     function exportData() {
-        // Coleta todos os pesos salvos individualmente no localStorage
         const weights = {};
         for(let i=0; i<localStorage.length; i++){
             let key = localStorage.key(i);
             if(key.startsWith('weight_')) weights[key] = localStorage.getItem(key);
         }
-
-        const fullBackup = {
-            workoutData: workoutData,
-            weights: weights,
-            theme: localStorage.getItem('app_theme'),
-            date: new Date().toLocaleDateString()
-        };
-
-        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(fullBackup));
-        const downloadAnchorNode = document.createElement('a');
-        downloadAnchorNode.setAttribute("href", dataStr);
-        downloadAnchorNode.setAttribute("download", "backup_treino.json");
-        document.body.appendChild(downloadAnchorNode);
-        downloadAnchorNode.click();
-        downloadAnchorNode.remove();
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify({workoutData, weights}));
+        const dl = document.createElement('a'); dl.setAttribute("href", dataStr); dl.setAttribute("download", "backup_treino.json"); dl.click();
         toggleFab();
     }
 
     function importData(event) {
-        const file = event.target.files[0];
-        if (!file) return;
-
         const reader = new FileReader();
-        reader.onload = function(e) {
-            try {
-                const imported = JSON.parse(e.target.result);
-                
-                // Restaura os pesos
-                if(imported.weights) {
-                    Object.keys(imported.weights).forEach(k => localStorage.setItem(k, imported.weights[k]));
-                }
-                
-                // Restaura os treinos
-                if(imported.workoutData) {
-                    workoutData = imported.workoutData;
-                    saveData();
-                }
-
-                alert("Backup restaurado com sucesso!");
-                location.reload();
-            } catch (err) {
-                alert("Erro ao ler o ficheiro. Certifica-te que é um backup válido.");
-            }
+        reader.onload = (e) => {
+            const d = JSON.parse(e.target.result);
+            if(d.weights) Object.keys(d.weights).forEach(k => localStorage.setItem(k, d.weights[k]));
+            if(d.workoutData) { workoutData = d.workoutData; saveData(); }
+            location.reload();
         };
-        reader.readAsText(file);
+        reader.readAsText(event.target.files[0]);
     }
 
-    // --- TIMER ---
     let timer;
     function startTimer(t) {
         if(t === 'Nec.') return;
@@ -387,7 +397,13 @@
             if(sec <= 0) { clearInterval(timer); widget.style.background = 'var(--success)'; setTimeout(stopTimer, 2000); }
         }, 1000);
     }
-    function stopTimer() { clearInterval(timer); document.getElementById('timer-widget').style.display = 'none'; document.getElementById('timer-widget').style.background = 'var(--accent)'; }
+    function stopTimer() { clearInterval(timer); const w = document.getElementById('timer-widget'); w.style.display = 'none'; w.style.background = 'var(--accent)'; }
+    function checkAutoReset() {
+        const last = localStorage.getItem('app_last_active');
+        if (last && (Date.now() - parseInt(last)) > (12 * 60 * 60 * 1000)) {
+            Object.keys(workoutData).forEach(k => workoutData[k].exercises.forEach(ex => localStorage.setItem('check_'+ex.id, 'false')));
+        }
+    }
 </script>
 </body>
 </html>
