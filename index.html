@@ -51,10 +51,10 @@
 
         /* TABS E GESTÃO */
         #tabs-wrapper { width: 100%; max-width: 500px; margin: 0 auto; border-bottom: 1px solid var(--border); }
-        .tabs-container { display: flex; background: rgba(0,0,0,0.05); }
+        .tabs-container { display: flex; background: rgba(0,0,0,0.05); overflow-x: auto; }
         
         .tab-btn-wrapper { position: relative; flex: 1; display: flex; }
-        .tab-btn { background: none; border: none; color: var(--text-dim); font-weight: 800; font-size: 1.1rem; padding: 18px; width: 100%; transition: 0.2s; cursor: pointer; }
+        .tab-btn { background: none; border: none; color: var(--text-dim); font-weight: 800; font-size: 1.1rem; padding: 18px; width: 100%; transition: 0.2s; cursor: pointer; white-space: nowrap; }
         .tab-btn.active { color: var(--primary); box-shadow: inset 0 -3px 0 var(--primary); }
         
         .btn-tab-manage {
@@ -64,8 +64,7 @@
         }
         .edit-mode .btn-tab-manage { display: block; }
         
-        .tab-controls { display: none; justify-content: center; padding: 10px; background: rgba(0,0,0,0.1); }
-        .edit-mode .tab-controls { display: flex; }
+        .tab-controls { display: flex; justify-content: center; padding: 10px; background: rgba(0,0,0,0.1); }
         .btn-add-tab { background: var(--card-bg); border: 1px dashed var(--primary); color: var(--primary); padding: 5px 15px; border-radius: 10px; font-weight: 800; cursor: pointer; font-size: 0.8rem; }
 
         .summary-card {
@@ -90,7 +89,9 @@
         .exercise-card.completed { opacity: 0.4; transform: scale(0.96); filter: grayscale(1); border-left-color: var(--success); }
 
         .btn-remove { display: none; position: absolute; right: -8px; top: -8px; background: var(--danger); color: white; border: none; border-radius: 50%; width: 26px; height: 26px; font-weight: bold; cursor: pointer; z-index: 10; }
-        .edit-mode .btn-remove { display: block; }
+        .btn-edit-ex { display: none; position: absolute; right: 26px; top: -8px; background: var(--primary); color: white; border: none; border-radius: 50%; width: 26px; height: 26px; font-weight: bold; cursor: pointer; z-index: 10; font-size: 12px; }
+        
+        .edit-mode .btn-remove, .edit-mode .btn-edit-ex { display: block; }
 
         .custom-checkbox { min-width: 30px; height: 30px; position: relative; cursor: pointer; }
         .custom-checkbox input { opacity: 0; width: 0; height: 0; }
@@ -115,12 +116,78 @@
         .fab-btn.active { transform: rotate(45deg); background: var(--danger); }
         
         .empty-state { text-align: center; padding: 40px; color: var(--text-dim); }
+
+        /* Sincronização Desktop */
+        @media (min-width: 1024px) {
+            body { padding-bottom: 0; }
+            header { 
+                position: fixed; left: 0; top: 0; width: 260px; height: 100vh; 
+                background: var(--header-bg); border-right: 1px solid var(--border); border-bottom: none; 
+                z-index: 100; padding: 40px 0; display: flex; flex-direction: column; 
+            }
+            .desktop-side-actions { 
+                margin-top: auto; margin-bottom: 120px; padding: 0 20px; display: flex; flex-direction: column; gap: 10px; 
+            }
+            .desktop-side-actions button { 
+                background: var(--card-bg); border: 1px solid var(--border); padding: 12px; border-radius: 8px; 
+                cursor: pointer; font-size: 0.8rem; font-weight: 800; color: var(--text-main); text-align: left; transition: 0.2s;
+            }
+            .desktop-side-actions button:hover { filter: brightness(1.2); }
+            
+            #tabs-wrapper { position: fixed; left: 20px; top: 100px; width: 220px; max-width: none; border: none; z-index: 101; background: transparent; }
+            .tabs-container { flex-direction: column; background: transparent; gap: 8px; overflow: visible; }
+            .tab-btn-wrapper { min-width: auto; }
+            .tab-btn { text-align: left; padding: 12px 20px; font-size: 0.95rem; border-radius: 10px; }
+            .tab-btn.active { background: var(--primary); color: white; box-shadow: none; }
+            
+            .tab-controls { display: none !important; }
+            
+            /* Melhoria: Barra de Progresso no Lado Direito (Desktop) */
+            .summary-card { 
+                position: fixed; 
+                right: 30px; 
+                bottom: 30px; 
+                width: 250px; 
+                margin: 0; 
+                z-index: 102; 
+                box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            }
+            
+            .action-bar-desktop {
+                margin-left: 280px; max-width: 1200px; width: calc(100% - 280px); 
+                padding: 40px 20px 0 20px; box-sizing: border-box; 
+                display: flex !important; gap: 15px; margin-bottom: 10px; flex-wrap: wrap;
+            }
+            .action-bar-desktop button {
+                background: var(--card-bg); border: 1px solid var(--border); padding: 10px 20px; 
+                border-radius: 8px; cursor: pointer; font-size: 0.85rem; font-weight: 800; 
+                color: var(--text-main); transition: 0.2s;
+            }
+            .action-bar-desktop button:hover { filter: brightness(1.2); }
+
+            .container { margin-left: 280px; max-width: 1200px; width: calc(100% - 280px); padding-top: 10px; }
+            #main-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 20px; align-items: start; }
+            h2 { grid-column: 1 / -1; font-size: 1.6rem; margin-bottom: 30px; }
+            .exercise-card { margin-bottom: 0; }
+            
+            .fab-container { display: none; }
+            .desktop-only { display: flex !important; }
+        }
+        @media (max-width: 1023px) {
+            .desktop-only { display: none !important; }
+        }
     </style>
 </head>
 <body onload="init()">
 
 <header>
     <h1>TRAINING PRO</h1>
+    <div class="desktop-side-actions desktop-only">
+        <button onclick="fabEdit()" id="desktop-edit-btn">⚙️ Modo Edição (Remover/Editar)</button>
+        <button onclick="toggleTheme()">🌓 Mudar Tema (Claro/Escuro)</button>
+        <button onclick="exportData()">📥 Exportar Backup (Salvar)</button>
+        <button onclick="document.getElementById('import-file').click()">📤 Importar Backup (Restaurar)</button>
+    </div>
 </header>
 
 <div id="tabs-wrapper">
@@ -135,6 +202,12 @@
     <div class="summary-bar-bg"><div class="summary-bar-fill" id="summary-bar-fill"></div></div>
 </div>
 
+<div class="action-bar-desktop desktop-only">
+    <button onclick="addTab()" style="color: var(--primary); border-color: var(--primary);">+ Nova Aba</button>
+    <button onclick="fabAdd()" style="color: var(--primary); border-color: var(--primary);">➕ Novo Exercício</button>
+    <button onclick="fabReset()">🔄 Limpar Treino do Dia</button>
+</div>
+
 <div class="container" id="main-container"></div>
 <div id="timer-widget" onclick="stopTimer()">00</div>
 
@@ -147,7 +220,7 @@
         <hr style="width:100%; border:0; border-top:1px solid var(--border); margin:4px 0;">
         <div class="fab-item" onclick="toggleTheme()">🌓 Mudar Tema (Claro/Escuro)</div>
         <div class="fab-item" onclick="fabReset()">🔄 Limpar Treino do Dia</div>
-        <div class="fab-item" onclick="fabEdit()">⚙️ Modo Edição (Remover)</div>
+        <div class="fab-item" onclick="fabEdit()" id="edit-fab-text">⚙️ Modo Edição (Remover/Editar)</div>
         <div class="fab-item" onclick="fabAdd()" style="color: var(--primary);">➕ Novo Exercício</div>
     </div>
     <button class="fab-btn" id="fab-btn" onclick="toggleFab()">+</button>
@@ -212,7 +285,6 @@
         const saved = localStorage.getItem('app_workout_data');
         workoutData = saved ? JSON.parse(saved) : defaultWorkouts;
         
-        // Garante label em todos
         Object.keys(workoutData).forEach(k => { if(!workoutData[k].label) workoutData[k].label = k.replace('treino', ''); });
         
         currentTabKey = Object.keys(workoutData)[0];
@@ -255,6 +327,7 @@
                 html += `
                 <div class="exercise-card ${isChecked ? 'completed' : ''}" id="card_${ex.id}">
                     <button class="btn-remove" onclick="removeEx('${currentTabKey}', '${ex.id}')">✕</button>
+                    <button class="btn-edit-ex" onclick="editEx('${currentTabKey}', '${ex.id}')" title="Editar Exercício">✏️</button>
                     <label class="custom-checkbox">
                         <input type="checkbox" onchange="toggleCheck('${ex.id}', this)" ${isChecked ? 'checked' : ''}>
                         <span class="checkmark"></span>
@@ -314,6 +387,19 @@
         if(t) { workoutData[currentTabKey].title = t; saveData(); renderAll(); }
     }
 
+    function editEx(key, id) {
+        const ex = workoutData[key].exercises.find(e => e.id === id);
+        if(!ex) return;
+        const newName = prompt("Nome do exercício:", ex.name);
+        if(newName !== null && newName.trim() !== '') ex.name = newName;
+        const newReps = prompt("Séries/Reps:", ex.reps);
+        if(newReps !== null && newReps.trim() !== '') ex.reps = newReps;
+        const newTime = prompt("Pausa (ex: 1m30, Nec.):", ex.time);
+        if(newTime !== null && newTime.trim() !== '') ex.time = newTime;
+        saveData();
+        renderAll();
+    }
+
     function toggleCheck(id, el) {
         localStorage.setItem('check_'+id, el.checked);
         if(el.checked) localStorage.setItem('app_last_active', Date.now());
@@ -334,10 +420,21 @@
         document.getElementById('fab-btn').classList.toggle('active');
     }
 
+    function closeFabMobile() {
+        if(window.innerWidth < 1024 && document.getElementById('fab-menu').classList.contains('show')) {
+            toggleFab();
+        }
+    }
+
     function fabEdit() { 
         document.body.classList.toggle('edit-mode'); 
-        document.getElementById('edit-fab-text').innerText = document.body.classList.contains('edit-mode') ? "✅ Sair Edição" : "⚙️ Modo Edição";
-        toggleFab(); 
+        const isEdit = document.body.classList.contains('edit-mode');
+        const text = isEdit ? "✅ Sair Edição" : "⚙️ Modo Edição (Remover/Editar)";
+        const fabBtn = document.getElementById('edit-fab-text');
+        if(fabBtn) fabBtn.innerText = text;
+        const desktopBtn = document.getElementById('desktop-edit-btn');
+        if(desktopBtn) desktopBtn.innerText = text;
+        closeFabMobile(); 
     }
 
     function fabAdd() {
@@ -345,19 +442,20 @@
         if(name) {
             workoutData[currentTabKey].exercises.push({ id: 'ex_'+Date.now(), name, reps: prompt("Reps:", "3x12"), time: prompt("Pausa:", "1m30") });
             saveData();
+            renderAll();
         }
-        toggleFab();
+        closeFabMobile();
     }
 
     function fabReset() {
-        if(confirm("Limpar progresso?")) {
+        if(confirm("Limpar progresso do dia atual?")) {
             workoutData[currentTabKey].exercises.forEach(ex => localStorage.setItem('check_'+ex.id, 'false'));
             renderAll();
         }
-        toggleFab();
+        closeFabMobile();
     }
 
-    function removeEx(key, id) { workoutData[key].exercises = workoutData[key].exercises.filter(ex => ex.id !== id); saveData(); }
+    function removeEx(key, id) { workoutData[key].exercises = workoutData[key].exercises.filter(ex => ex.id !== id); saveData(); renderAll(); }
     function saveWeight(id, val) { localStorage.setItem('weight_'+id, val); }
     function saveData() { localStorage.setItem('app_workout_data', JSON.stringify(workoutData)); }
 
@@ -365,7 +463,7 @@
         const next = document.body.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
         document.body.setAttribute('data-theme', next);
         localStorage.setItem('app_theme', next);
-        toggleFab();
+        closeFabMobile();
     }
 
     function exportData() {
@@ -376,7 +474,7 @@
         }
         const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify({workoutData, weights}));
         const dl = document.createElement('a'); dl.setAttribute("href", dataStr); dl.setAttribute("download", "backup_treino.json"); dl.click();
-        toggleFab();
+        closeFabMobile();
     }
 
     function importData(event) {
