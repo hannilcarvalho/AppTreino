@@ -152,7 +152,27 @@
         .empty-state { text-align: center; padding: 40px; color: var(--text-dim); }
 
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 3000; align-items: center; justify-content: center; backdrop-filter: blur(5px); }
-        .modal-content { background: var(--card-bg); border: 1px solid var(--border); padding: 25px; border-radius: 20px; max-width: 90%; width: 350px; text-align: center; box-shadow: 0 15px 35px rgba(0,0,0,0.5); }
+        .modal-content { background: var(--card-bg); border: 1px solid var(--border); padding: 25px; border-radius: 20px; max-width: 90%; width: 350px; text-align: center; box-shadow: 0 15px 35px rgba(0,0,0,0.5); animation: modalIn 0.2s ease-out; }
+
+        @keyframes modalIn {
+            from { opacity: 0; transform: scale(0.92) translateY(12px); }
+            to   { opacity: 1; transform: scale(1)    translateY(0);     }
+        }
+
+        .modal-input {
+            width: 100%; box-sizing: border-box; background: rgba(0,0,0,0.2);
+            border: 1px solid var(--border); border-radius: 10px; color: var(--text-main);
+            padding: 12px 14px; font-size: 0.95rem; font-family: 'Inter', sans-serif;
+            font-weight: 600; outline: none; transition: 0.2s;
+        }
+        .modal-input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(56,189,248,0.15); }
+        .modal-label { display: block; font-size: 0.7rem; font-weight: 800; color: var(--text-dim); text-transform: uppercase; margin-bottom: 6px; letter-spacing: 0.5px; }
+
+        .modal-btn { flex: 1; padding: 12px; border-radius: 10px; border: none; font-size: 0.9rem; font-weight: 800; cursor: pointer; font-family: 'Inter', sans-serif; transition: 0.2s; }
+        .modal-btn:hover { filter: brightness(1.15); }
+        .modal-btn-cancel { background: rgba(0,0,0,0.15); color: var(--text-dim); border: 1px solid var(--border); }
+        .modal-btn-confirm { background: var(--primary); color: white; }
+        .modal-btn-danger { background: var(--danger); color: white; }
         .heatmap-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin: 20px 0; }
         .heat-square { aspect-ratio: 1; border-radius: 6px; border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 0.6rem; font-weight: 800; opacity: 0.9; }
 
@@ -263,6 +283,63 @@
     <button class="fab-btn" id="fab-btn" onclick="toggleFab()"><i class="ph-bold ph-plus"></i></button>
 </div>
 
+<!-- ===== MODAIS CUSTOMIZADOS ===== -->
+
+<!-- Modal: Input simples (addTab, renameTab, editTitle) -->
+<div class="modal-overlay" id="input-modal">
+    <div class="modal-content">
+        <h3 id="input-modal-title" style="margin-top:0; color:var(--text-main);"></h3>
+        <input type="text" id="input-modal-field" class="modal-input" placeholder="">
+        <div style="display:flex; gap:10px; margin-top:16px;">
+            <button class="modal-btn modal-btn-cancel" onclick="closeInputModal()">Cancelar</button>
+            <button class="modal-btn modal-btn-confirm" id="input-modal-confirm">Confirmar</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Confirmação (deleteTab, fabReset) -->
+<div class="modal-overlay" id="confirm-modal">
+    <div class="modal-content">
+        <div style="font-size:2.5rem; margin-bottom:10px;">⚠️</div>
+        <h3 id="confirm-modal-title" style="margin-top:0; color:var(--text-main);"></h3>
+        <p id="confirm-modal-msg" style="color:var(--text-dim); font-size:0.9rem; margin:0 0 20px;"></p>
+        <div style="display:flex; gap:10px;">
+            <button class="modal-btn modal-btn-cancel" onclick="closeConfirmModal()">Cancelar</button>
+            <button class="modal-btn modal-btn-danger" id="confirm-modal-ok">Confirmar</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Edição/Criação de exercício (editEx, fabAdd) -->
+<div class="modal-overlay" id="exercise-modal">
+    <div class="modal-content" style="width:400px; text-align:left;">
+        <h3 id="exercise-modal-title" style="margin-top:0; color:var(--text-main); text-align:center;"></h3>
+        <div style="display:flex; flex-direction:column; gap:14px;">
+            <div>
+                <label class="modal-label">Nome do exercício</label>
+                <input type="text" id="ex-modal-name" class="modal-input" placeholder="Ex: Supino reto barra">
+            </div>
+            <div>
+                <label class="modal-label">Séries / Reps</label>
+                <input type="text" id="ex-modal-reps" class="modal-input" placeholder="Ex: 3x12 ou 4x8-10">
+            </div>
+            <div>
+                <label class="modal-label">Pausa</label>
+                <input type="text" id="ex-modal-time" class="modal-input" placeholder="Ex: 1m30 ou Nec.">
+            </div>
+            <div>
+                <label class="modal-label">Link YouTube <span style="font-weight:400; opacity:0.5;">(opcional)</span></label>
+                <input type="text" id="ex-modal-link" class="modal-input" placeholder="https://youtube.com/...">
+            </div>
+        </div>
+        <div style="display:flex; gap:10px; margin-top:20px;">
+            <button class="modal-btn modal-btn-cancel" onclick="closeExModal()">Cancelar</button>
+            <button class="modal-btn modal-btn-confirm" id="ex-modal-confirm">Salvar</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Histórico (mantido) -->
 <div class="modal-overlay" id="history-modal">
     <div class="modal-content">
         <h3 style="margin-top:0; color:var(--text-main); display:flex; align-items:center; justify-content:center; gap:8px;">
@@ -275,7 +352,7 @@
 </div>
 
 <script>
-   const defaultWorkouts = {
+     const defaultWorkouts = {
     treinoA: { label: "A", title: "Peito e Tríceps", exercises: [
         {id: 'a1', name: "Supino inclinado halteres", reps: "2x12 + 2x8", time: "1m30"},
         {id: 'a2', name: "Supino reto barra", reps: "4x12", time: "1m30"},
@@ -415,41 +492,51 @@
     function showWorkout(key, btn) { currentTabKey = key; renderTabs(); renderAll(); }
 
     function addTab() {
-        const name = prompt("Nome da aba (ex: Pernas):");
-        if(name) {
+        openInputModal('Nova aba de treino', 'Ex: Pernas, Glúteos…', '', (name) => {
+            if(!name.trim()) return;
             const id = 'treino' + Date.now();
             workoutData[id] = { label: name.toUpperCase().substring(0, 10), title: name, exercises: [] };
             saveData(); currentTabKey = id; renderTabs(); renderAll();
-        }
+        });
     }
 
     function renameTab(key) {
         if(!document.body.classList.contains('edit-mode')) return;
-        const n = prompt("Novo nome da aba:", workoutData[key].label);
-        if(n) { workoutData[key].label = n.toUpperCase().substring(0, 10); saveData(); renderTabs(); }
+        openInputModal('Renomear aba', 'Novo nome', workoutData[key].label, (n) => {
+            if(!n.trim()) return;
+            workoutData[key].label = n.toUpperCase().substring(0, 10);
+            saveData(); renderTabs();
+        });
     }
 
     function deleteTab(key) {
-        if(Object.keys(workoutData).length <= 1) return alert("Mantenha ao menos um treino.");
-        if(confirm(`Excluir aba "${workoutData[key].label}"?`)) {
-            delete workoutData[key]; currentTabKey = Object.keys(workoutData)[0]; saveData(); renderTabs(); renderAll();
+        if(Object.keys(workoutData).length <= 1) {
+            openConfirmModal('Ação não permitida', 'Mantenha ao menos um treino cadastrado.', null, true);
+            return;
         }
+        openConfirmModal(
+            `Excluir aba "${workoutData[key].label}"?`,
+            'Todos os exercícios desta aba serão removidos permanentemente.',
+            () => {
+                delete workoutData[key];
+                currentTabKey = Object.keys(workoutData)[0];
+                saveData(); renderTabs(); renderAll();
+            }
+        );
     }
 
     function editTitle() {
-        const t = prompt("Novo título:", workoutData[currentTabKey].title);
-        if(t) { workoutData[currentTabKey].title = t; saveData(); renderAll(); }
+        openInputModal('Renomear treino', 'Novo título', workoutData[currentTabKey].title, (t) => {
+            if(!t.trim()) return;
+            workoutData[currentTabKey].title = t;
+            saveData(); renderAll();
+        });
     }
 
     function editEx(key, id) {
         const ex = workoutData[key].exercises.find(e => e.id === id);
         if(!ex) return;
-        const newName = prompt("Nome:", ex.name);
-        if(newName) ex.name = newName;
-        ex.reps = prompt("Séries/Reps:", ex.reps) || ex.reps;
-        ex.time = prompt("Pausa:", ex.time) || ex.time;
-        ex.link = prompt("Link Youtube (opcional):", ex.link || "");
-        saveData(); renderAll();
+        openExModal('edit', key, ex);
     }
 
     function toggleCheck(id, el) {
@@ -491,26 +578,20 @@
     }
 
     function fabAdd() {
-        const name = prompt("Nome do exercício:");
-        if(name) {
-            workoutData[currentTabKey].exercises.push({ 
-                id: 'ex_'+Date.now(), 
-                name, 
-                reps: prompt("Reps:", "3x12"), 
-                time: prompt("Pausa:", "1m30"), 
-                link: "" 
-            });
-            saveData(); renderAll();
-        }
         closeFabMobile();
+        openExModal('new', null, null);
     }
 
     function fabReset() {
-        if(confirm("Limpar marcações de hoje?")) {
-            workoutData[currentTabKey].exercises.forEach(ex => localStorage.setItem('check_'+ex.id, 'false'));
-            renderAll();
-        }
         closeFabMobile();
+        openConfirmModal(
+            'Limpar treino de hoje?',
+            'Todas as marcações do treino atual serão apagadas.',
+            () => {
+                workoutData[currentTabKey].exercises.forEach(ex => localStorage.setItem('check_'+ex.id, 'false'));
+                renderAll();
+            }
+        );
     }
 
     function removeEx(key, id) { workoutData[key].exercises = workoutData[key].exercises.filter(ex => ex.id !== id); saveData(); renderAll(); }
@@ -632,6 +713,94 @@
         document.getElementById('timer-widget').style.display = 'none'; 
     }
     /* ----------------------------------- */
+
+    /* ===== FUNÇÕES DOS MODAIS ===== */
+
+    // --- Modal de Input Simples ---
+    let _inputCallback = null;
+    function openInputModal(title, placeholder, defaultValue, callback) {
+        _inputCallback = callback;
+        document.getElementById('input-modal-title').innerText = title;
+        const field = document.getElementById('input-modal-field');
+        field.placeholder = placeholder;
+        field.value = defaultValue || '';
+        document.getElementById('input-modal').style.display = 'flex';
+        setTimeout(() => { field.focus(); field.select(); }, 80);
+        document.getElementById('input-modal-confirm').onclick = () => {
+            const val = field.value.trim();
+            if(val && _inputCallback) _inputCallback(val);
+            closeInputModal();
+        };
+        field.onkeydown = (e) => { if(e.key === 'Enter') document.getElementById('input-modal-confirm').click(); if(e.key === 'Escape') closeInputModal(); };
+    }
+    function closeInputModal() {
+        document.getElementById('input-modal').style.display = 'none';
+        _inputCallback = null;
+    }
+
+    // --- Modal de Confirmação ---
+    let _confirmCallback = null;
+    function openConfirmModal(title, msg, callback, infoOnly = false) {
+        _confirmCallback = callback;
+        document.getElementById('confirm-modal-title').innerText = title;
+        document.getElementById('confirm-modal-msg').innerText = msg;
+        const okBtn = document.getElementById('confirm-modal-ok');
+        if(infoOnly) {
+            okBtn.style.display = 'none';
+        } else {
+            okBtn.style.display = '';
+            okBtn.onclick = () => { if(_confirmCallback) _confirmCallback(); closeConfirmModal(); };
+        }
+        document.getElementById('confirm-modal').style.display = 'flex';
+    }
+    function closeConfirmModal() {
+        document.getElementById('confirm-modal').style.display = 'none';
+        _confirmCallback = null;
+    }
+
+    // --- Modal de Exercício (criar/editar) ---
+    let _exModalMode = null, _exModalKey = null, _exModalId = null;
+    function openExModal(mode, key, ex) {
+        _exModalMode = mode;
+        _exModalKey = key || currentTabKey;
+        _exModalId = ex ? ex.id : null;
+
+        document.getElementById('exercise-modal-title').innerText = mode === 'edit' ? 'Editar Exercício' : 'Novo Exercício';
+        document.getElementById('ex-modal-name').value  = ex ? ex.name  : '';
+        document.getElementById('ex-modal-reps').value  = ex ? ex.reps  : '3x12';
+        document.getElementById('ex-modal-time').value  = ex ? ex.time  : '1m30';
+        document.getElementById('ex-modal-link').value  = ex ? (ex.link || '') : '';
+        document.getElementById('exercise-modal').style.display = 'flex';
+        setTimeout(() => document.getElementById('ex-modal-name').focus(), 80);
+
+        document.getElementById('ex-modal-confirm').onclick = saveExModal;
+        document.getElementById('ex-modal-name').onkeydown = (e) => { if(e.key === 'Enter') document.getElementById('ex-modal-confirm').click(); };
+    }
+    function closeExModal() {
+        document.getElementById('exercise-modal').style.display = 'none';
+    }
+    function saveExModal() {
+        const name = document.getElementById('ex-modal-name').value.trim();
+        if(!name) { document.getElementById('ex-modal-name').focus(); return; }
+        const reps = document.getElementById('ex-modal-reps').value.trim() || '3x12';
+        const time = document.getElementById('ex-modal-time').value.trim() || '1m30';
+        const link = document.getElementById('ex-modal-link').value.trim();
+
+        if(_exModalMode === 'new') {
+            workoutData[_exModalKey].exercises.push({ id: 'ex_'+Date.now(), name, reps, time, link });
+        } else {
+            const ex = workoutData[_exModalKey].exercises.find(e => e.id === _exModalId);
+            if(ex) { ex.name = name; ex.reps = reps; ex.time = time; ex.link = link; }
+        }
+        saveData(); renderAll();
+        closeExModal();
+    }
+
+    // Fecha modais ao clicar no overlay
+    document.getElementById('input-modal').addEventListener('click', function(e){ if(e.target===this) closeInputModal(); });
+    document.getElementById('confirm-modal').addEventListener('click', function(e){ if(e.target===this) closeConfirmModal(); });
+    document.getElementById('exercise-modal').addEventListener('click', function(e){ if(e.target===this) closeExModal(); });
+    /* ============================== */
 
     function checkAutoReset() {
         const last = localStorage.getItem('app_last_active');
