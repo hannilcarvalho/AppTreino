@@ -274,8 +274,8 @@
         <button onclick="toggleTheme()"><i class="ph-bold ph-sun-dim"></i> Mudar Tema</button>
         <button onclick="exportData()"><i class="ph-bold ph-download-simple"></i> Exportar Backup</button>
         <button onclick="document.getElementById('import-file').click()"><i class="ph-bold ph-upload-simple"></i> Importar Backup</button>
-        <button onclick="exportPDF()" style="color:var(--accent);"><i class="ph-bold ph-file-pdf"></i> Exportar Ficha PDF</button>
-        <button onclick="document.getElementById('import-pdf-file').click()" style="color:var(--accent);"><i class="ph-bold ph-file-arrow-up"></i> Importar Ficha PDF</button>
+        <button onclick="exportPDF()" style="color:var(--accent);"><i class="ph-bold ph-file-pdf"></i> Baixar Ficha PDF</button>
+        <!-- <button onclick="document.getElementById('import-pdf-file').click()" style="color:var(--accent);"><i class="ph-bold ph-file-arrow-up"></i> Importar Ficha PDF</button> -->
     </div>
 </header>
 
@@ -314,8 +314,8 @@
     <div class="fab-menu" id="fab-menu">
         <div class="fab-item" onclick="exportData()"><i class="ph-bold ph-download-simple"></i> Exportar Backup</div>
         <div class="fab-item" onclick="document.getElementById('import-file').click()"><i class="ph-bold ph-upload-simple"></i> Importar Backup</div>
-        <div class="fab-item" onclick="exportPDF()" style="color:var(--accent);"><i class="ph-bold ph-file-pdf"></i> Exportar Ficha PDF</div>
-        <div class="fab-item" onclick="document.getElementById('import-pdf-file').click()" style="color:var(--accent);"><i class="ph-bold ph-file-arrow-up"></i> Importar Ficha PDF</div>
+        <div class="fab-item" onclick="exportPDF()" style="color:var(--accent);"><i class="ph-bold ph-file-pdf"></i> Baixar Ficha PDF</div>
+        <!-- <div class="fab-item" onclick="document.getElementById('import-pdf-file').click()" style="color:var(--accent);"><i class="ph-bold ph-file-arrow-up"></i> Importar Ficha PDF</div> -->
         <hr style="width:100%; border:0; border-top:1px solid var(--border); margin:4px 0;">
         <div class="fab-item" onclick="openHistory()"><i class="ph-bold ph-calendar"></i> Frequência de Treino</div>
         <div class="fab-item" onclick="toggleTheme()"><i class="ph-bold ph-moon"></i> Mudar Tema</div>
@@ -921,7 +921,7 @@
 
         Object.keys(workoutData).forEach((key, tabIndex) => {
             const tab = workoutData[key];
-            if (tab.exercises.length === 0) return; // pula abas vazias
+            if (tab.exercises.length === 0) return; // ***** abas vazias
 
             // Nova página a partir da segunda aba (se não couber)
             if (tabIndex > 0 && y > 250) {
