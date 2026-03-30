@@ -7,6 +7,10 @@
     <meta name="mobile-web-app-capable" content="yes">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <!-- jsPDF: geração de PDF client-side (US01) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <!-- PDF.js: leitura de PDF para importação (US02) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <style>
         :root {
             --bg-main: radial-gradient(circle at top right, #1e293b, #0f172a);
@@ -270,6 +274,8 @@
         <button onclick="toggleTheme()"><i class="ph-bold ph-sun-dim"></i> Mudar Tema</button>
         <button onclick="exportData()"><i class="ph-bold ph-download-simple"></i> Exportar Backup</button>
         <button onclick="document.getElementById('import-file').click()"><i class="ph-bold ph-upload-simple"></i> Importar Backup</button>
+        <button onclick="exportPDF()" style="color:var(--accent);"><i class="ph-bold ph-file-pdf"></i> Exportar Ficha PDF</button>
+        <button onclick="document.getElementById('import-pdf-file').click()" style="color:var(--accent);"><i class="ph-bold ph-file-arrow-up"></i> Importar Ficha PDF</button>
     </div>
 </header>
 
@@ -302,11 +308,14 @@
 </div>
 
 <input type="file" id="import-file" style="display:none" onchange="importData(event)">
+<input type="file" id="import-pdf-file" style="display:none" accept=".pdf" onchange="importPDF(event)">
 
 <div class="fab-container">
     <div class="fab-menu" id="fab-menu">
         <div class="fab-item" onclick="exportData()"><i class="ph-bold ph-download-simple"></i> Exportar Backup</div>
         <div class="fab-item" onclick="document.getElementById('import-file').click()"><i class="ph-bold ph-upload-simple"></i> Importar Backup</div>
+        <div class="fab-item" onclick="exportPDF()" style="color:var(--accent);"><i class="ph-bold ph-file-pdf"></i> Exportar Ficha PDF</div>
+        <div class="fab-item" onclick="document.getElementById('import-pdf-file').click()" style="color:var(--accent);"><i class="ph-bold ph-file-arrow-up"></i> Importar Ficha PDF</div>
         <hr style="width:100%; border:0; border-top:1px solid var(--border); margin:4px 0;">
         <div class="fab-item" onclick="openHistory()"><i class="ph-bold ph-calendar"></i> Frequência de Treino</div>
         <div class="fab-item" onclick="toggleTheme()"><i class="ph-bold ph-moon"></i> Mudar Tema</div>
@@ -867,6 +876,268 @@
         reader.readAsText(event.target.files[0]);
     }
 
+    // =========================================================
+    // US01 — Exportar Ficha de Treino para PDF
+    // Gera um PDF client-side com jsPDF.
+    // Cada aba vira uma seção com tabela de exercícios.
+    // RN03: bloqueia exportação se não houver nenhum exercício.
+    // =========================================================
+    function exportPDF() {
+        closeFabMobile();
+
+        // RN03 — verifica se há ao menos um exercício em qualquer aba
+        const hasExercises = Object.values(workoutData).some(t => t.exercises.length > 0);
+        if (!hasExercises) {
+            openConfirmModal(
+                'Nenhum exercício cadastrado',
+                'Adicione pelo menos um exercício antes de exportar sua ficha.',
+                null, true
+            );
+            return;
+        }
+
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+        const pageW = 210, margin = 14, colW = pageW - margin * 2;
+        let y = 20;
+
+        // Marca d'água de origem para validação na importação
+        doc.setProperties({ subject: 'TRAINING_PRO_EXPORT_V1' });
+
+        // Cabeçalho
+        doc.setFillColor(14, 165, 233); // --primary blue
+        doc.rect(0, 0, pageW, 14, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(11);
+        doc.setFont('helvetica', 'bold');
+        doc.text('FICHA DE TREINO — TRAINING PRO', pageW / 2, 9.5, { align: 'center' });
+
+        const today = new Date().toLocaleDateString('pt-BR');
+        doc.setFontSize(7);
+        doc.setFont('helvetica', 'normal');
+        doc.text(`Gerado em: ${today}`, pageW - margin, 9.5, { align: 'right' });
+
+        y = 22;
+
+        Object.keys(workoutData).forEach((key, tabIndex) => {
+            const tab = workoutData[key];
+            if (tab.exercises.length === 0) return; // pula abas vazias
+
+            // Nova página a partir da segunda aba (se não couber)
+            if (tabIndex > 0 && y > 250) {
+                doc.addPage();
+                y = 15;
+            }
+
+            // Título da aba
+            doc.setFillColor(30, 41, 59);
+            doc.roundedRect(margin, y, colW, 9, 2, 2, 'F');
+            doc.setTextColor(56, 189, 248);
+            doc.setFontSize(9);
+            doc.setFont('helvetica', 'bold');
+            doc.text(`${abbreviateLabel(tab.label)}  —  ${tab.title.toUpperCase()}`, margin + 4, y + 6);
+            y += 13;
+
+            // Cabeçalho da tabela
+            const cols = { name: margin, reps: margin + 90, time: margin + 130, weight: margin + 160 };
+            doc.setFillColor(248, 250, 252);
+            doc.rect(margin, y, colW, 7, 'F');
+            doc.setTextColor(100, 116, 139);
+            doc.setFontSize(7.5);
+            doc.setFont('helvetica', 'bold');
+            doc.text('EXERCÍCIO', cols.name + 2, y + 5);
+            doc.text('SÉRIES', cols.reps, y + 5);
+            doc.text('PAUSA', cols.time, y + 5);
+            doc.text('PESO REG.', cols.weight, y + 5);
+            y += 7;
+
+            // Linhas de exercícios
+            tab.exercises.forEach((ex, i) => {
+                if (y > 272) { doc.addPage(); y = 15; }
+
+                const rowH = 8;
+                const bg = i % 2 === 0 ? [255,255,255] : [241, 245, 249];
+                doc.setFillColor(...bg);
+                doc.rect(margin, y, colW, rowH, 'F');
+
+                doc.setTextColor(30, 41, 59);
+                doc.setFontSize(8);
+                doc.setFont('helvetica', 'normal');
+
+                // Nome truncado para caber na coluna
+                const nameMax = 52;
+                const nameStr = ex.name.length > nameMax ? ex.name.substring(0, nameMax) + '…' : ex.name;
+                doc.text(nameStr, cols.name + 2, y + 5.5);
+                doc.text(ex.reps, cols.reps, y + 5.5);
+                doc.text(ex.time, cols.time, y + 5.5);
+
+                const savedWeight = localStorage.getItem('weight_' + ex.id) || '—';
+                doc.text(savedWeight, cols.weight, y + 5.5);
+
+                // Linha separadora
+                doc.setDrawColor(226, 232, 240);
+                doc.line(margin, y + rowH, margin + colW, y + rowH);
+                y += rowH;
+            });
+
+            y += 8; // espaço entre abas
+        });
+
+        // Rodapé em todas as páginas
+        const totalPages = doc.getNumberOfPages();
+        for (let p = 1; p <= totalPages; p++) {
+            doc.setPage(p);
+            doc.setFontSize(7);
+            doc.setTextColor(148, 163, 184);
+            doc.setFont('helvetica', 'normal');
+            doc.text(`Training Pro  •  Página ${p} de ${totalPages}`, pageW / 2, 292, { align: 'center' });
+        }
+
+        doc.save('ficha_treino.pdf');
+    }
+
+    // =========================================================
+    // US02 — Importar Ficha de Treino via PDF
+    // Usa PDF.js para extrair texto e faz parsing do padrão
+    // gerado pelo exportPDF acima.
+    // RN01: confirma sobrescrita antes de importar.
+    // RN02: valida que o PDF foi gerado pelo Training Pro.
+    // RN04: rejeita arquivos maiores que 2 MB.
+    // =========================================================
+    async function importPDF(event) {
+        const file = event.target.files[0];
+        event.target.value = ''; // reseta input para permitir reimport
+        if (!file) return;
+
+        // RN04 — limite de 2 MB
+        if (file.size > 2 * 1024 * 1024) {
+            openConfirmModal(
+                'Arquivo muito grande',
+                'O PDF deve ter no máximo 2 MB. Tente exportar novamente pelo Training Pro.',
+                null, true
+            );
+            return;
+        }
+
+        // RN01 — confirmação de sobrescrita
+        openConfirmModal(
+            'Importar Ficha PDF?',
+            'Os treinos atuais serão substituídos pelos dados do arquivo. Esta ação não pode ser desfeita.',
+            async () => {
+                try {
+                    const arrayBuffer = await file.arrayBuffer();
+
+                    // Configura worker do PDF.js
+                    pdfjsLib.GlobalWorkerOptions.workerSrc =
+                        'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+                    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+
+                    // Extrai todo o texto do PDF
+                    let fullText = '';
+                    for (let p = 1; p <= pdf.numPages; p++) {
+                        const page = await pdf.getPage(p);
+                        const content = await page.getTextContent();
+                        fullText += content.items.map(i => i.str).join(' ') + '\n';
+                    }
+
+                    // RN02 — valida origem: o PDF deve ter a marca do Training Pro
+                    if (!fullText.includes('TRAINING PRO') && !fullText.includes('FICHA DE TREINO')) {
+                        openConfirmModal(
+                            'PDF não reconhecido',
+                            'Este PDF não segue o formato do Training Pro e não pôde ser importado.',
+                            null, true
+                        );
+                        return;
+                    }
+
+                    // Parsing: extrai abas e exercícios
+                    // Padrão do cabeçalho de aba: "LABEL — TÍTULO"  (gerado por exportPDF)
+                    // Padrão de linha de exercício: nome  séries  pausa  peso
+                    const parsed = {};
+                    const lines = fullText.split('\n').map(l => l.trim()).filter(Boolean);
+
+                    let currentKey = null;
+
+                    // Detecta seção de aba pelo padrão "X — NOME DO TREINO"
+                    const tabHeaderRe = /^(.+?)\s+[—\-–]\s+(.+)$/;
+                    // Detecta linha de cabeçalho da tabela (ignora)
+                    const tableHeaderRe = /^EXERCÍCIO\s+SÉRIES/i;
+                    // Detecta rodapé (ignora)
+                    const footerRe = /Training Pro\s*•\s*Página/i;
+                    // Detecta linha de data do cabeçalho (ignora)
+                    const dateRe = /^Gerado em:/i;
+
+                    lines.forEach(line => {
+                        if (tableHeaderRe.test(line)) return;
+                        if (footerRe.test(line)) return;
+                        if (dateRe.test(line)) return;
+                        if (line === 'FICHA DE TREINO — TRAINING PRO') return;
+
+                        const tabMatch = line.match(tabHeaderRe);
+                        if (tabMatch) {
+                            const label = tabMatch[1].trim();
+                            const title = tabMatch[2].trim();
+                            // Capitaliza o título
+                            const titleCased = title.charAt(0).toUpperCase() + title.slice(1).toLowerCase();
+                            currentKey = 'treino_' + label.replace(/\s+/g,'_');
+                            parsed[currentKey] = { label, title: titleCased, exercises: [] };
+                            return;
+                        }
+
+                        if (!currentKey) return;
+
+                        // Linha de exercício: últimas colunas são pausa e peso (curtas)
+                        // Padrão: "Nome do Exercício   3x12   1m30   80kg"
+                        // Usa regex que separa pelo padrão de séries (NxN) como âncora
+                        const exRe = /^(.+?)\s{2,}(\S.*?\S|\S)\s{2,}(\S+)\s{2,}(\S+)\s*$/;
+                        const exMatch = line.match(exRe);
+                        if (exMatch) {
+                            parsed[currentKey].exercises.push({
+                                id: 'ex_' + Date.now() + '_' + Math.random().toString(36).substr(2,5),
+                                name: exMatch[1].trim().replace(/…$/, ''),
+                                reps: exMatch[2].trim(),
+                                time: exMatch[3].trim(),
+                            });
+                        }
+                    });
+
+                    const tabCount = Object.keys(parsed).length;
+                    if (tabCount === 0) {
+                        openConfirmModal(
+                            'Nenhum dado encontrado',
+                            'Não foi possível extrair exercícios deste PDF. Certifique-se de que foi gerado pelo Training Pro.',
+                            null, true
+                        );
+                        return;
+                    }
+
+                    // Aplica dados importados
+                    workoutData = parsed;
+                    currentTabKey = Object.keys(parsed)[0];
+                    saveData();
+                    saveActiveTab(currentTabKey);
+                    renderTabs();
+                    renderAll();
+
+                    openConfirmModal(
+                        'Importação concluída ✓',
+                        `${tabCount} aba(s) importada(s) com sucesso.`,
+                        null, true
+                    );
+
+                } catch (err) {
+                    openConfirmModal(
+                        'Erro ao ler o arquivo',
+                        'Não foi possível processar o PDF. Verifique se o arquivo não está corrompido.',
+                        null, true
+                    );
+                }
+            }
+        );
+    }
+    // =========================================================
+
     let timerInterval;
     function startTimer(t) {
         if(t === 'Nec.') return;
@@ -1002,6 +1273,80 @@
             Object.keys(workoutData).forEach(k => workoutData[k].exercises.forEach(ex => localStorage.setItem('check_'+ex.id, 'false')));
         }
     }
+
+    // =========================================================
+    // Swipe para trocar de aba no mobile
+    // - Só ativo em telas < 1024px
+    // - Threshold: 50px horizontal com menos de 120px vertical
+    //   (evita conflito com scroll normal da página)
+    // - Feedback visual: o conteúdo desliza levemente na direção
+    //   do swipe antes de trocar, indicando a navegação
+    // =========================================================
+    (function initSwipe() {
+        const container = document.getElementById('main-container');
+        let startX = 0, startY = 0, startTime = 0;
+
+        container.addEventListener('touchstart', (e) => {
+            if (window.innerWidth >= 1024) return;
+            startX = e.touches[0].clientX;
+            startY = e.touches[0].clientY;
+            startTime = Date.now();
+        }, { passive: true });
+
+        container.addEventListener('touchend', (e) => {
+            if (window.innerWidth >= 1024) return;
+
+            const dx = e.changedTouches[0].clientX - startX;
+            const dy = e.changedTouches[0].clientY - startY;
+            const dt = Date.now() - startTime;
+
+            // Ignora: movimento muito lento, muito vertical, ou muito curto
+            if (dt > 400) return;
+            if (Math.abs(dy) > 120) return;
+            if (Math.abs(dx) < 50) return;
+
+            const keys = Object.keys(workoutData);
+            const currentIndex = keys.indexOf(currentTabKey);
+
+            // Swipe para esquerda → próxima aba; direita → anterior
+            let nextIndex;
+            if (dx < 0) {
+                nextIndex = (currentIndex + 1) % keys.length;
+            } else {
+                nextIndex = (currentIndex - 1 + keys.length) % keys.length;
+            }
+
+            if (nextIndex === currentIndex) return;
+
+            // Feedback visual: desliza o conteúdo brevemente
+            const translateDir = dx < 0 ? '-40px' : '40px';
+            container.style.transition = 'opacity 0.15s ease, transform 0.15s ease';
+            container.style.opacity = '0';
+            container.style.transform = `translateX(${translateDir})`;
+
+            setTimeout(() => {
+                currentTabKey = keys[nextIndex];
+                saveActiveTab(currentTabKey);
+                renderTabs();
+                renderAll();
+
+                // Reseta posição para o lado oposto e anima entrada
+                const enterDir = dx < 0 ? '40px' : '-40px';
+                container.style.transition = 'none';
+                container.style.opacity = '0';
+                container.style.transform = `translateX(${enterDir})`;
+
+                requestAnimationFrame(() => {
+                    requestAnimationFrame(() => {
+                        container.style.transition = 'opacity 0.2s ease, transform 0.2s ease';
+                        container.style.opacity = '1';
+                        container.style.transform = 'translateX(0)';
+                    });
+                });
+            }, 150);
+        }, { passive: true });
+    })();
+    // =========================================================
 </script>
 </body>
 </html>
