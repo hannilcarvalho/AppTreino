@@ -7,9 +7,11 @@
     <meta name="mobile-web-app-capable" content="yes">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
-    <!-- jsPDF: geração de PDF client-side (US01) -->
+    <!-- QR Code -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <!-- jsPDF: exportar PDF -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <!-- PDF.js: leitura de PDF para importação (US02) -->
+    <!-- PDF.js: importar PDF -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <style>
         :root {
@@ -41,24 +43,118 @@
 
         @keyframes tabFadeIn {
             from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        .tab-content-animate { animation: tabFadeIn 0.3s ease-out forwards; }
+
+        /* ===== SYNC MODAL ===== */
+        @keyframes syncPulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(56,189,248,0.4); }
+            50%       { box-shadow: 0 0 0 12px rgba(56,189,248,0); }
+        }
+        @keyframes scanLine {
+            0%   { top: 0; }
+            100% { top: 100%; }
+        }
+        @keyframes successPop {
+            0%   { transform: scale(0.5); opacity: 0; }
+            70%  { transform: scale(1.1); }
+            100% { transform: scale(1);   opacity: 1; }
         }
 
-        .tab-content-animate {
-            animation: tabFadeIn 0.3s ease-out forwards;
+        .sync-modal-overlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85); z-index: 4000;
+            align-items: center; justify-content: center; backdrop-filter: blur(8px);
+        }
+        .sync-modal-box {
+            background: var(--card-bg); border: 1px solid var(--border);
+            border-radius: 28px; padding: 32px 28px; max-width: 92%; width: 420px;
+            box-shadow: 0 30px 80px rgba(0,0,0,0.6);
+            animation: modalIn 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+            max-height: 90vh; overflow-y: auto;
+        }
+        .sync-tabs {
+            display: flex; background: rgba(0,0,0,0.2); border-radius: 14px;
+            padding: 4px; gap: 4px; margin-bottom: 24px;
+        }
+        .sync-tab {
+            flex: 1; padding: 10px; border: none; border-radius: 10px;
+            font-weight: 800; font-size: 0.82rem; cursor: pointer;
+            background: transparent; color: var(--text-dim); transition: all 0.2s;
+            font-family: 'Inter', sans-serif; display: flex; align-items: center;
+            justify-content: center; gap: 6px; letter-spacing: 0.3px;
+        }
+        .sync-tab.active { background: var(--primary); color: white; box-shadow: 0 4px 15px rgba(56,189,248,0.35); }
+        .sync-panel { display: none; }
+        .sync-panel.active { display: block; }
+
+        .qr-wrapper {
+            background: white; border-radius: 20px; padding: 18px;
+            display: flex; align-items: center; justify-content: center;
+            margin: 16px auto; width: fit-content; position: relative; overflow: hidden;
+        }
+        .qr-scan-line {
+            position: absolute; left: 0; right: 0; height: 2px;
+            background: linear-gradient(90deg, transparent, var(--primary), transparent);
+            animation: scanLine 2s linear infinite; opacity: 0.8;
         }
 
-        body { 
-            font-family: 'Inter', sans-serif; 
+        .link-box {
+            background: rgba(0,0,0,0.2); border: 1px solid var(--border);
+            border-radius: 14px; padding: 14px; font-family: monospace;
+            font-size: 0.72rem; color: var(--text-dim); word-break: break-all;
+            line-height: 1.5; max-height: 90px; overflow-y: auto;
+            cursor: pointer; transition: 0.2s; position: relative;
+        }
+        .link-box:hover { border-color: var(--primary); }
+        .copy-badge {
+            position: absolute; top: 8px; right: 8px;
+            background: var(--primary); color: white; font-size: 0.65rem;
+            font-weight: 800; padding: 3px 8px; border-radius: 8px; font-family: 'Inter', sans-serif;
+        }
+        .import-paste-area {
+            width: 100%; box-sizing: border-box;
+            background: rgba(0,0,0,0.15); border: 1.5px dashed var(--border);
+            border-radius: 14px; color: var(--text-main); padding: 14px;
+            font-family: monospace; font-size: 0.75rem; resize: vertical;
+            min-height: 90px; outline: none; transition: 0.2s;
+        }
+        .import-paste-area:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(56,189,248,0.15); }
+        .sync-info-row {
+            display: flex; align-items: center; gap: 10px;
+            background: rgba(56,189,248,0.08); border: 1px solid rgba(56,189,248,0.2);
+            border-radius: 12px; padding: 12px; margin-bottom: 16px;
+            font-size: 0.8rem; color: var(--text-dim);
+        }
+        .sync-info-row i { color: var(--primary); font-size: 1.2rem; flex-shrink: 0; }
+        .sync-option {
+            display: flex; align-items: center; gap: 12px;
+            padding: 12px; border-radius: 12px; cursor: pointer;
+            border: 1px solid var(--border); margin-bottom: 8px; transition: 0.2s;
+        }
+        .sync-option:hover { border-color: var(--primary); background: rgba(56,189,248,0.05); }
+        .sync-option input[type=checkbox] { accent-color: var(--primary); width: 16px; height: 16px; }
+        .sync-option-label { font-size: 0.85rem; font-weight: 700; }
+        .sync-option-desc { font-size: 0.72rem; color: var(--text-dim); margin-top: 2px; }
+        .success-icon {
+            display: none; text-align: center; padding: 20px 0;
+            animation: successPop 0.4s cubic-bezier(0.34,1.56,0.64,1) forwards;
+        }
+        .success-icon i { font-size: 4rem; color: var(--success); }
+        /* ======================== */
+
+        body {
+            font-family: 'Inter', sans-serif;
             background: var(--bg-main);
-            color: var(--text-main); 
-            margin: 0; padding-bottom: 120px; 
+            color: var(--text-main);
+            margin: 0; padding-bottom: 120px;
             min-height: 100vh;
             transition: background 0.3s ease;
         }
 
-        header { 
-            width: 100%; padding: 25px 0; text-align: center; 
+        header {
+            width: 100%; padding: 25px 0; text-align: center;
             background: var(--header-bg); backdrop-filter: blur(15px);
             border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 1100;
         }
@@ -66,11 +162,9 @@
 
         #tabs-wrapper { width: 100%; max-width: 500px; margin: 0 auto; border-bottom: 1px solid var(--border); }
         .tabs-container { display: flex; background: rgba(0,0,0,0.05); overflow-x: auto; }
-        
         .tab-btn-wrapper { position: relative; flex: 1; display: flex; }
         .tab-btn { background: none; border: none; color: var(--text-dim); font-weight: 800; font-size: 1.1rem; padding: 18px; width: 100%; transition: 0.2s; cursor: pointer; white-space: nowrap; }
         .tab-btn.active { color: var(--primary); box-shadow: inset 0 -3px 0 var(--primary); }
-        
         .btn-tab-manage {
             position: absolute; top: 2px; right: 2px; background: var(--danger); color: white;
             border: none; border-radius: 50%; width: 18px; height: 18px; font-size: 10px;
@@ -83,9 +177,17 @@
         }
         .edit-mode .btn-tab-manage,
         .edit-mode .btn-tab-rename { display: flex; }
-        
         .tab-controls { display: flex; justify-content: center; padding: 10px; background: rgba(0,0,0,0.1); }
         .btn-add-tab { background: var(--card-bg); border: 1px dashed var(--primary); color: var(--primary); padding: 5px 15px; border-radius: 10px; font-weight: 800; cursor: pointer; font-size: 0.8rem; display: flex; align-items: center; gap: 5px; }
+
+        /* Indicador de treino sugerido do dia */
+        .tab-btn-wrapper .tab-suggested-dot {
+            position: absolute; bottom: 6px; left: 50%; transform: translateX(-50%);
+            width: 5px; height: 5px; border-radius: 50%;
+            background: var(--gold); display: none;
+            box-shadow: 0 0 6px var(--gold);
+        }
+        .tab-btn-wrapper.suggested .tab-suggested-dot { display: block; }
 
         .summary-card {
             background: var(--card-bg); backdrop-filter: blur(12px);
@@ -100,17 +202,16 @@
         .container { width: 100%; max-width: 480px; padding: 0 20px 20px 20px; box-sizing: border-box; margin: 0 auto; }
         h2 { font-size: 0.8rem; color: var(--text-dim); text-transform: uppercase; margin: 25px 0 15px 0; display: flex; align-items: center; justify-content: space-between; }
 
-        .exercise-card { 
+        .exercise-card {
             background: var(--card-bg); backdrop-filter: blur(12px);
-            border-radius: 22px; padding: 22px; margin-bottom: 18px; 
-            border: 1px solid var(--border); border-left: 5px solid var(--primary); 
+            border-radius: 22px; padding: 22px; margin-bottom: 18px;
+            border: 1px solid var(--border); border-left: 5px solid var(--primary);
             display: flex; align-items: flex-start; gap: 15px; position: relative; transition: all 0.3s ease;
         }
         .exercise-card.completed { opacity: 0.4; transform: scale(0.96); filter: grayscale(1); border-left-color: var(--success); }
 
         .btn-remove { display: none; position: absolute; right: -8px; top: -8px; background: var(--danger); color: white; border: none; border-radius: 50%; width: 26px; height: 26px; font-weight: bold; cursor: pointer; z-index: 10; align-items: center; justify-content: center; }
         .btn-edit-ex { display: none; position: absolute; right: 26px; top: -8px; background: var(--primary); color: white; border: none; border-radius: 50%; width: 26px; height: 26px; font-weight: bold; cursor: pointer; z-index: 10; font-size: 14px; align-items: center; justify-content: center; }
-        
         .edit-mode .btn-remove, .edit-mode .btn-edit-ex { display: flex; }
 
         .custom-checkbox { min-width: 30px; height: 30px; position: relative; cursor: pointer; }
@@ -125,15 +226,10 @@
         .info-value { font-size: 0.9rem; font-weight: 700; color: var(--text-main); }
         .timer-trigger { color: var(--accent); border-bottom: 1px dotted var(--accent); cursor: pointer; }
         .weight-input { background: rgba(0,0,0,0.1); border: 1px solid var(--border); border-radius: 8px; color: var(--success); padding: 5px; width: 55px; font-weight: 800; text-align: center; transition: 0.3s; }
-        
         .weight-input.pr-active { color: var(--gold) !important; border-color: var(--gold) !important; box-shadow: 0 0 8px rgba(251, 191, 36, 0.3); }
 
-
-        
         .exercise-note { width: 100%; display: none; margin-top: 5px; background: rgba(0,0,0,0.1); border: 1px solid var(--border); border-radius: 8px; color: var(--text-main); padding: 8px; box-sizing: border-box; font-family: 'Inter', sans-serif; resize: vertical; font-size: 0.85rem; transition: 0.3s; }
         .exercise-note.show { display: block; }
-
-        /* Nota sempre visível abaixo do título quando preenchida */
         .exercise-note-display {
             font-size: 0.78rem; color: var(--text-dim); margin-top: 4px; margin-bottom: 2px;
             line-height: 1.5; cursor: pointer; padding: 4px 6px;
@@ -141,31 +237,26 @@
         }
         .exercise-note-display:hover { color: var(--text-main); border-left-color: var(--primary); }
 
-        #timer-widget { 
-            position: fixed; bottom: 35px; left: 35px; width: 80px; height: 80px; 
-            display: none; align-items: center; justify-content: center; z-index: 2000; 
+        #timer-widget {
+            position: fixed; bottom: 35px; left: 35px; width: 80px; height: 80px;
+            display: none; align-items: center; justify-content: center; z-index: 2000;
             cursor: pointer; background: var(--card-bg); border-radius: 50%;
             box-shadow: 0 10px 25px rgba(0,0,0,0.5); backdrop-filter: blur(10px);
             border: 1px solid var(--border);
         }
         #timer-widget svg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; transform: rotate(-90deg); }
         .ring-bg { fill: none; stroke: rgba(255,255,255,0.05); stroke-width: 6; }
-        .ring-progress {
-            fill: none; stroke: var(--primary); stroke-width: 6;
-            stroke-linecap: round;
-            stroke-dasharray: 283;
-            stroke-dashoffset: 0;
-            transition: stroke-dashoffset 1s linear, stroke 0.3s ease;
-        }
+        .ring-progress { fill: none; stroke: var(--primary); stroke-width: 6; stroke-linecap: round; stroke-dasharray: 283; stroke-dashoffset: 0; transition: stroke-dashoffset 1s linear, stroke 0.3s ease; }
         #timer-text { position: relative; font-weight: 800; font-size: 1.5rem; color: var(--text-main); z-index: 2; }
 
         .fab-container { position: fixed; bottom: 35px; right: 35px; z-index: 2000; display: flex; flex-direction: column; align-items: flex-end; }
         .fab-menu { display: none; flex-direction: column; gap: 12px; margin-bottom: 15px; }
         .fab-menu.show { display: flex; }
         .fab-item { background: var(--card-bg); backdrop-filter: blur(15px); border: 1px solid var(--border); color: var(--text-main); padding: 12px 20px; border-radius: 25px; font-weight: 800; font-size: 0.85rem; cursor: pointer; box-shadow: 0 5px 15px rgba(0,0,0,0.2); white-space: nowrap; display: flex; align-items: center; gap: 10px; }
+        .fab-item.fab-sync { color: var(--primary); border-color: rgba(56,189,248,0.3); animation: syncPulse 2.5s ease-in-out infinite; }
         .fab-btn { width: 65px; height: 65px; background: var(--primary); color: white; border: none; border-radius: 50%; font-size: 2rem; cursor: pointer; box-shadow: 0 8px 25px rgba(0,0,0,0.3); transition: 0.3s; display: flex; align-items: center; justify-content: center; }
         .fab-btn.active { transform: rotate(45deg); background: var(--danger); }
-        
+
         .empty-state { text-align: center; padding: 40px; color: var(--text-dim); }
 
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 3000; align-items: center; justify-content: center; backdrop-filter: blur(5px); }
@@ -176,34 +267,44 @@
             to   { opacity: 1; transform: scale(1)    translateY(0);     }
         }
 
-        .modal-input {
-            width: 100%; box-sizing: border-box; background: rgba(0,0,0,0.2);
-            border: 1px solid var(--border); border-radius: 10px; color: var(--text-main);
-            padding: 12px 14px; font-size: 0.95rem; font-family: 'Inter', sans-serif;
-            font-weight: 600; outline: none; transition: 0.2s;
-        }
+        .modal-input { width: 100%; box-sizing: border-box; background: rgba(0,0,0,0.2); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); padding: 12px 14px; font-size: 0.95rem; font-family: 'Inter', sans-serif; font-weight: 600; outline: none; transition: 0.2s; }
         .modal-input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(56,189,248,0.15); }
         .modal-label { display: block; font-size: 0.7rem; font-weight: 800; color: var(--text-dim); text-transform: uppercase; margin-bottom: 6px; letter-spacing: 0.5px; }
-
         .modal-btn { flex: 1; padding: 12px; border-radius: 10px; border: none; font-size: 0.9rem; font-weight: 800; cursor: pointer; font-family: 'Inter', sans-serif; transition: 0.2s; }
         .modal-btn:hover { filter: brightness(1.15); }
-        .modal-btn-cancel { background: rgba(0,0,0,0.15); color: var(--text-dim); border: 1px solid var(--border); }
+        .modal-btn-cancel  { background: rgba(0,0,0,0.15); color: var(--text-dim); border: 1px solid var(--border); }
         .modal-btn-confirm { background: var(--primary); color: white; }
-        .modal-btn-danger { background: var(--danger); color: white; }
+        .modal-btn-danger  { background: var(--danger);  color: white; }
         .heatmap-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin: 20px 0; }
         .heat-square { aspect-ratio: 1; border-radius: 6px; border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 0.6rem; font-weight: 800; opacity: 0.9; }
 
-        /* Indicador de treino sugerido do dia */
-        .tab-btn-wrapper .tab-suggested-dot {
-            position: absolute; bottom: 6px; left: 50%; transform: translateX(-50%);
-            width: 5px; height: 5px; border-radius: 50%;
-            background: var(--gold); display: none;
-            box-shadow: 0 0 6px var(--gold);
-        }
-        .tab-btn-wrapper.suggested .tab-suggested-dot { display: block; }
-
-        /* Desktop: badge "Hoje" ao lado do label na sidebar */
+        /* ===== DESKTOP ===== */
         @media (min-width: 1024px) {
+            body { padding-bottom: 0; }
+            header {
+                position: fixed; left: 0; top: 0; width: 260px; height: 100vh;
+                background: var(--header-bg); border-right: 1px solid var(--border); border-bottom: none;
+                z-index: 100; padding: 40px 0; display: flex; flex-direction: column;
+            }
+            .desktop-side-actions {
+                margin-top: auto; margin-bottom: 120px; padding: 0 20px; display: flex; flex-direction: column; gap: 10px;
+            }
+            .desktop-side-actions button {
+                background: var(--card-bg); border: 1px solid var(--border); padding: 12px; border-radius: 8px;
+                cursor: pointer; font-size: 0.8rem; font-weight: 800; color: var(--text-main);
+                text-align: left; transition: 0.2s; display: flex; align-items: center; gap: 10px;
+            }
+            .desktop-side-actions button:hover { filter: brightness(1.2); }
+            .desktop-side-actions .btn-sync-desktop { color: var(--primary); border-color: rgba(56,189,248,0.3); }
+
+            #tabs-wrapper { position: fixed; left: 20px; top: 100px; width: 220px; max-width: none; border: none; z-index: 101; background: transparent; }
+            .tabs-container { flex-direction: column; background: transparent; gap: 8px; overflow: visible; }
+            .tab-btn { text-align: left; padding: 12px 20px; font-size: 0.95rem; border-radius: 10px; }
+            .tab-btn.active { background: var(--primary); color: white; box-shadow: none; }
+            .tab-controls { display: flex !important; padding: 6px 0 0 0; background: transparent; justify-content: flex-start; }
+            .btn-add-tab { width: 100%; padding: 10px 20px; border-radius: 10px; font-size: 0.85rem; justify-content: flex-start; }
+
+            /* Badge "HOJE" na sidebar */
             .tab-btn-wrapper .tab-suggested-dot { display: none !important; }
             .tab-btn-wrapper.suggested .tab-btn::after {
                 content: 'HOJE'; font-size: 0.55rem; font-weight: 800;
@@ -211,52 +312,22 @@
                 padding: 2px 6px; border-radius: 20px; margin-left: 8px;
                 vertical-align: middle; letter-spacing: 0.5px;
             }
-        }
 
-        @media (min-width: 1024px) {
-            body { padding-bottom: 0; }
-            header { 
-                position: fixed; left: 0; top: 0; width: 260px; height: 100vh; 
-                background: var(--header-bg); border-right: 1px solid var(--border); border-bottom: none; 
-                z-index: 100; padding: 40px 0; display: flex; flex-direction: column; 
-            }
-            .desktop-side-actions { 
-                margin-top: auto; margin-bottom: 120px; padding: 0 20px; display: flex; flex-direction: column; gap: 10px; 
-            }
-            .desktop-side-actions button { 
-                background: var(--card-bg); border: 1px solid var(--border); padding: 12px; border-radius: 8px; 
-                cursor: pointer; font-size: 0.8rem; font-weight: 800; color: var(--text-main); text-align: left; transition: 0.2s;
-                display: flex; align-items: center; gap: 10px;
-            }
-            .desktop-side-actions button:hover { filter: brightness(1.2); }
-            
-            #tabs-wrapper { position: fixed; left: 20px; top: 100px; width: 220px; max-width: none; border: none; z-index: 101; background: transparent; }
-            .tabs-container { flex-direction: column; background: transparent; gap: 8px; overflow: visible; }
-            .tab-btn { text-align: left; padding: 12px 20px; font-size: 0.95rem; border-radius: 10px; }
-            .tab-btn.active { background: var(--primary); color: white; box-shadow: none; }
-            
-            /* FIX: botão Nova Aba visível na sidebar desktop */
-            .tab-controls { display: flex !important; padding: 6px 0 0 0; background: transparent; justify-content: flex-start; }
-            .btn-add-tab { width: 100%; padding: 10px 20px; border-radius: 10px; font-size: 0.85rem; justify-content: flex-start; }
-            
             .summary-card { position: fixed; right: 30px; bottom: 30px; width: 250px; margin: 0; z-index: 102; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
-            
             .action-bar-desktop {
-                margin-left: 280px; max-width: 1200px; width: calc(100% - 280px); 
-                padding: 40px 20px 0 20px; box-sizing: border-box; 
+                margin-left: 280px; max-width: 1200px; width: calc(100% - 280px);
+                padding: 40px 20px 0 20px; box-sizing: border-box;
                 display: flex !important; gap: 15px; margin-bottom: 10px; flex-wrap: wrap;
             }
             .action-bar-desktop button {
-                background: var(--card-bg); border: 1px solid var(--border); padding: 10px 20px; 
-                border-radius: 8px; cursor: pointer; font-size: 0.85rem; font-weight: 800; 
+                background: var(--card-bg); border: 1px solid var(--border); padding: 10px 20px;
+                border-radius: 8px; cursor: pointer; font-size: 0.85rem; font-weight: 800;
                 color: var(--text-main); transition: 0.2s; display: flex; align-items: center; gap: 8px;
             }
             .action-bar-desktop button:hover { filter: brightness(1.2); }
-
             .container { margin-left: 280px; max-width: 1200px; width: calc(100% - 280px); padding-top: 10px; }
             #main-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 20px; align-items: start; }
             h2 { grid-column: 1 / -1; font-size: 1.6rem; margin-bottom: 30px; }
-            
             .fab-container { display: none; }
             .desktop-only { display: flex !important; }
         }
@@ -275,7 +346,6 @@
         <button onclick="exportData()"><i class="ph-bold ph-download-simple"></i> Exportar Backup</button>
         <button onclick="document.getElementById('import-file').click()"><i class="ph-bold ph-upload-simple"></i> Importar Backup</button>
         <button onclick="exportPDF()" style="color:var(--accent);"><i class="ph-bold ph-file-pdf"></i> Baixar Ficha PDF</button>
-        <!-- <button onclick="document.getElementById('import-pdf-file').click()" style="color:var(--accent);"><i class="ph-bold ph-file-arrow-up"></i> Importar Ficha PDF</button> -->
     </div>
 </header>
 
@@ -292,9 +362,11 @@
 </div>
 
 <div class="action-bar-desktop desktop-only">
-    <button onclick="fabAdd()" style="color: var(--primary); border-color: var(--primary);"><i class="ph-bold ph-plus-circle"></i> Novo Exercício</button>
+    <button onclick="openSyncModal()" style="color:var(--primary); border-color:rgba(56,189,248,0.3);"><i class="ph-bold ph-share-network"></i> Sincronizar</button>
+    <button onclick="addTab()" style="color:var(--primary); border-color:var(--primary);"><i class="ph-bold ph-plus"></i> Nova Aba</button>
+    <button onclick="fabAdd()" style="color:var(--primary); border-color:var(--primary);"><i class="ph-bold ph-plus-circle"></i> Novo Exercício</button>
     <button onclick="fabReset()"><i class="ph-bold ph-arrows-counter-clockwise"></i> Limpar Hoje</button>
-    <button onclick="openHistory()" style="background: var(--primary); color: white; border: none;"><i class="ph-bold ph-calendar"></i> Frequência</button>
+    <button onclick="openHistory()" style="background:var(--primary); color:white; border:none;"><i class="ph-bold ph-calendar"></i> Frequência</button>
 </div>
 
 <div class="container" id="main-container"></div>
@@ -307,27 +379,111 @@
     <div id="timer-text">00</div>
 </div>
 
-<input type="file" id="import-file" style="display:none" onchange="importData(event)">
+<input type="file" id="import-file"     style="display:none" onchange="importData(event)">
 <input type="file" id="import-pdf-file" style="display:none" accept=".pdf" onchange="importPDF(event)">
 
 <div class="fab-container">
     <div class="fab-menu" id="fab-menu">
+        <div class="fab-item fab-sync" onclick="openSyncModal()"><i class="ph-bold ph-share-network"></i> Sincronizar / QR Code</div>
         <div class="fab-item" onclick="exportData()"><i class="ph-bold ph-download-simple"></i> Exportar Backup</div>
         <div class="fab-item" onclick="document.getElementById('import-file').click()"><i class="ph-bold ph-upload-simple"></i> Importar Backup</div>
         <div class="fab-item" onclick="exportPDF()" style="color:var(--accent);"><i class="ph-bold ph-file-pdf"></i> Baixar Ficha PDF</div>
-        <!-- <div class="fab-item" onclick="document.getElementById('import-pdf-file').click()" style="color:var(--accent);"><i class="ph-bold ph-file-arrow-up"></i> Importar Ficha PDF</div> -->
         <hr style="width:100%; border:0; border-top:1px solid var(--border); margin:4px 0;">
         <div class="fab-item" onclick="openHistory()"><i class="ph-bold ph-calendar"></i> Frequência de Treino</div>
         <div class="fab-item" onclick="toggleTheme()"><i class="ph-bold ph-moon"></i> Mudar Tema</div>
         <div class="fab-item" onclick="fabReset()"><i class="ph-bold ph-arrows-counter-clockwise"></i> Limpar Treino</div>
         <div class="fab-item" onclick="fabEdit()" id="edit-fab-text"><i class="ph-bold ph-gear"></i> Modo Edição</div>
-        <div class="fab-item" onclick="fabAdd()" style="color: var(--primary);"><i class="ph-bold ph-plus"></i> Novo Exercício</div>
+        <div class="fab-item" onclick="fabAdd()" style="color:var(--primary);"><i class="ph-bold ph-plus"></i> Novo Exercício</div>
     </div>
     <button class="fab-btn" id="fab-btn" onclick="toggleFab()"><i class="ph-bold ph-plus"></i></button>
 </div>
 
-<!-- ===== MODAIS ===== -->
+<!-- ===== MODAL DE SINCRONIZAÇÃO ===== -->
+<div class="sync-modal-overlay" id="sync-modal">
+    <div class="sync-modal-box">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:20px;">
+            <div>
+                <h3 style="margin:0; color:var(--text-main); font-size:1.1rem;">
+                    <i class="ph-bold ph-share-network" style="color:var(--primary)"></i> Sincronizar
+                </h3>
+                <p style="margin:4px 0 0; font-size:0.75rem; color:var(--text-dim);">Compartilhe seus treinos entre dispositivos</p>
+            </div>
+            <button onclick="closeSyncModal()" style="background:none; border:none; color:var(--text-dim); font-size:1.5rem; cursor:pointer; padding:4px;">
+                <i class="ph-bold ph-x"></i>
+            </button>
+        </div>
+        <div class="sync-tabs">
+            <button class="sync-tab active" onclick="switchSyncTab('export')" id="stab-export"><i class="ph-bold ph-qr-code"></i> Exportar</button>
+            <button class="sync-tab" onclick="switchSyncTab('import')" id="stab-import"><i class="ph-bold ph-download-simple"></i> Importar</button>
+        </div>
 
+        <!-- EXPORT PANEL -->
+        <div class="sync-panel active" id="spanel-export">
+            <div class="sync-info-row">
+                <i class="ph-bold ph-info"></i>
+                <span>Gera um QR Code ou link com todos os seus treinos para abrir em outro dispositivo.</span>
+            </div>
+            <label class="sync-option">
+                <input type="checkbox" id="opt-weights" checked onchange="rebuildSyncLink()">
+                <div>
+                    <div class="sync-option-label"><i class="ph-bold ph-barbell" style="color:var(--primary)"></i> Incluir pesos salvos</div>
+                    <div class="sync-option-desc">Valores de carga registrados por exercício</div>
+                </div>
+            </label>
+            <label class="sync-option">
+                <input type="checkbox" id="opt-notes" checked onchange="rebuildSyncLink()">
+                <div>
+                    <div class="sync-option-label"><i class="ph-bold ph-note-pencil" style="color:var(--accent)"></i> Incluir anotações</div>
+                    <div class="sync-option-desc">Dicas e observações por exercício</div>
+                </div>
+            </label>
+            <label class="sync-option">
+                <input type="checkbox" id="opt-history" onchange="rebuildSyncLink()">
+                <div>
+                    <div class="sync-option-label"><i class="ph-bold ph-calendar-check" style="color:var(--success)"></i> Incluir histórico de treinos</div>
+                    <div class="sync-option-desc">Frequência dos últimos 30 dias</div>
+                </div>
+            </label>
+            <div style="text-align:center; margin-top:18px;">
+                <div class="qr-wrapper" id="qr-wrapper">
+                    <div class="qr-scan-line"></div>
+                    <div id="qr-canvas"></div>
+                </div>
+                <p style="font-size:0.7rem; color:var(--text-dim); margin:6px 0 14px;">Aponte a câmera do outro dispositivo para este QR Code</p>
+            </div>
+            <div style="font-size:0.72rem; color:var(--text-dim); font-weight:800; text-transform:uppercase; margin-bottom:6px; letter-spacing:0.5px;">Ou copie o link:</div>
+            <div class="link-box" id="sync-link-box" onclick="copySyncLink()">
+                <span class="copy-badge"><i class="ph-bold ph-copy"></i> Copiar</span>
+                <span id="sync-link-text">Gerando link...</span>
+            </div>
+            <p id="copy-feedback" style="font-size:0.75rem; color:var(--success); font-weight:800; text-align:center; margin:8px 0 0; display:none;">
+                <i class="ph-bold ph-check-circle"></i> Link copiado para a área de transferência!
+            </p>
+        </div>
+
+        <!-- IMPORT PANEL -->
+        <div class="sync-panel" id="spanel-import">
+            <div class="sync-info-row">
+                <i class="ph-bold ph-warning" style="color:var(--gold)"></i>
+                <span>Cole o link de sincronização ou escaneie o QR Code. Os dados atuais serão <strong style="color:var(--danger)">substituídos</strong>.</span>
+            </div>
+            <label class="modal-label" style="margin-bottom:8px;">Cole o link de sincronização aqui:</label>
+            <textarea class="import-paste-area" id="import-paste" placeholder="Cole o link completo aqui...&#10;&#10;Ex: training-pro://data?v=1&d=eJy..."></textarea>
+            <div style="display:flex; gap:10px; margin-top:16px;">
+                <button class="modal-btn modal-btn-cancel" onclick="closeSyncModal()">Cancelar</button>
+                <button class="modal-btn modal-btn-confirm" onclick="importFromLink()" style="display:flex; align-items:center; justify-content:center; gap:8px;">
+                    <i class="ph-bold ph-download-simple"></i> Importar
+                </button>
+            </div>
+            <div class="success-icon" id="import-success-icon">
+                <i class="ph-bold ph-check-circle"></i>
+                <p style="color:var(--success); font-weight:800; font-size:0.9rem; margin:8px 0 0;">Treino importado com sucesso!</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== MODAIS CUSTOMIZADOS ===== -->
 <div class="modal-overlay" id="input-modal">
     <div class="modal-content">
         <h3 id="input-modal-title" style="margin-top:0; color:var(--text-main);"></h3>
@@ -391,962 +547,859 @@
 </div>
 
 <script>
-    const defaultWorkouts = {
-        treinoA: { label: "A", title: "Peito e Tríceps", exercises: [
-            {id: 'a1', name: "Supino inclinado halteres", reps: "2x12 + 2x8", time: "1m30"},
-            {id: 'a2', name: "Supino reto barra", reps: "4x12", time: "1m30"},
-            {id: 'a3', name: "Voador", reps: "3x12 (2s iso)", time: "1m30"},
-            {id: 'a4', name: "Crossover baixo", reps: "3x12", time: "1m30"},
-            {id: 'a5', name: "Paralelas", reps: "3x máx", time: "1m30"},
-            {id: 'a6', name: "Elevação lateral sentado", reps: "3x12 + 1 drop", time: "1m30"},
-            {id: 'a7', name: "Tríceps testa halter", reps: "3x12", time: "1m30"},
-            {id: 'a8', name: "Tríceps corda", reps: "2x12 + 1x10 drop", time: "1m30"}
-        ]},
-        treinoB: { label: "B", title: "Costas e Bíceps", exercises: [
-            {id: 'b1', name: "Barra fixa pronada", reps: "40 reps totais", time: "1m30"},
-            {id: 'b2', name: "Remada curvada", reps: "2x12 + 2x8", time: "Nec."},
-            {id: 'b3', name: "Puxador triângulo", reps: "3x15", time: "1m"},
-            {id: 'b4', name: "Pulldown", reps: "4x12", time: "1m30"},
-            {id: 'b5', name: "Remada baixa aberta", reps: "3x10 + drop", time: "1m30"},
-            {id: 'b6', name: "Rosca alternada", reps: "3x12", time: "1m"},
-            {id: 'b7', name: "Rosca Scott máquina", reps: "3x12", time: "1m30"},
-            {id: 'b8', name: "Encolhimento ombros", reps: "3x15", time: "Nec."}
-        ]},
-        treinoC: { label: "C", title: "Perna Anterior", exercises: [
-            {id: 'c1', name: "Cadeira adutora", reps: "3x15", time: "1m30"},
-            {id: 'c2', name: "Agachamento hack", reps: "3x10-12", time: "1m30"},
-            {id: 'c3', name: "Leg 45°", reps: "2x12 + 2x8", time: "Nec."},
-            {id: 'c4', name: "Cadeira extensora", reps: "3x15 + drop", time: "1m30"},
-            {id: 'c5', name: "Stiff", reps: "4x12", time: "1m30"},
-            {id: 'c6', name: "Panturrilha em pé", reps: "3x falha", time: "1m30"},
-            {id: 'c7', name: "Panturrilha sentada", reps: "3x falha", time: "1m30"}
-        ]},
-        treinoD: { label: "D", title: "Ombros e Braços", exercises: [
-            {id: 'd1', name: "Desenvolvimento halteres", reps: "2x12 + 2x8", time: "1m30"},
-            {id: 'd2', name: "Elevação lateral halter", reps: "3x15 + drop", time: "Nec."},
-            {id: 'd3', name: "Elevação lateral máquina", reps: "3x12", time: "1m30"},
-            {id: 'd4', name: "Crucifixo inverso", reps: "3x15", time: "1m30"},
-            {id: 'd5', name: "Face pull", reps: "3x15", time: "1m30"},
-            {id: 'd6', name: "Tríceps francês polia", reps: "3x12", time: "1m30"},
-            {id: 'd7', name: "Rosca martelo", reps: "3x12", time: "1m30"}
-        ]},
-        treinoE: { label: "E", title: "Perna Posterior", exercises: [
-            {id: 'e1', name: "Levantamento terra", reps: "3x6-8", time: "Nec."},
-            {id: 'e2', name: "Mesa flexora", reps: "4x12", time: "1m30"},
-            {id: 'e3', name: "Elevação pélvica", reps: "3x12", time: "Nec."},
-            {id: 'e4', name: "Cadeira abdutora", reps: "3x13", time: "1m"},
-            {id: 'e5', name: "Afundo halteres", reps: "3x12", time: "1m"}
-        ]}
-    };
+// ============================================================
+//  DEFAULT DATA
+// ============================================================
+const defaultWorkouts = {
+    treinoA: { label: "A", title: "Peito e Tríceps", exercises: [
+        {id: 'a1', name: "Supino inclinado halteres", reps: "2x12 + 2x8",       time: "1m30"},
+        {id: 'a2', name: "Supino reto barra",         reps: "4x12",             time: "1m30"},
+        {id: 'a3', name: "Voador",                    reps: "3x12 (2s iso)",    time: "1m30"},
+        {id: 'a4', name: "Crossover baixo",           reps: "3x12",             time: "1m30"},
+        {id: 'a5', name: "Paralelas",                 reps: "3x máx",           time: "1m30"},
+        {id: 'a6', name: "Elevação lateral sentado",  reps: "3x12 + 1 drop",   time: "1m30"},
+        {id: 'a7', name: "Tríceps testa halter",      reps: "3x12",             time: "1m30"},
+        {id: 'a8', name: "Tríceps corda",             reps: "2x12 + 1x10 drop", time: "1m30"}
+    ]},
+    treinoB: { label: "B", title: "Costas e Bíceps", exercises: [
+        {id: 'b1', name: "Barra fixa pronada",        reps: "40 reps totais",   time: "1m30"},
+        {id: 'b2', name: "Remada curvada",            reps: "2x12 + 2x8",       time: "Nec."},
+        {id: 'b3', name: "Puxador triângulo",         reps: "3x15",             time: "1m"},
+        {id: 'b4', name: "Pulldown",                  reps: "4x12",             time: "1m30"},
+        {id: 'b5', name: "Remada baixa aberta",       reps: "3x10 + drop",      time: "1m30"},
+        {id: 'b6', name: "Rosca alternada",           reps: "3x12",             time: "1m"},
+        {id: 'b7', name: "Rosca Scott máquina",       reps: "3x12",             time: "1m30"},
+        {id: 'b8', name: "Encolhimento ombros",       reps: "3x15",             time: "Nec."}
+    ]},
+    treinoC: { label: "C", title: "Perna Anterior", exercises: [
+        {id: 'c1', name: "Cadeira adutora",           reps: "3x15",             time: "1m30"},
+        {id: 'c2', name: "Agachamento hack",          reps: "3x10-12",          time: "1m30"},
+        {id: 'c3', name: "Leg 45°",                   reps: "2x12 + 2x8",       time: "Nec."},
+        {id: 'c4', name: "Cadeira extensora",         reps: "3x15 + drop",      time: "1m30"},
+        {id: 'c5', name: "Stiff",                     reps: "4x12",             time: "1m30"},
+        {id: 'c6', name: "Panturrilha em pé",         reps: "3x falha",         time: "1m30"},
+        {id: 'c7', name: "Panturrilha sentada",       reps: "3x falha",         time: "1m30"}
+    ]},
+    treinoD: { label: "D", title: "Ombros e Braços", exercises: [
+        {id: 'd1', name: "Desenvolvimento halteres",  reps: "2x12 + 2x8",       time: "1m30"},
+        {id: 'd2', name: "Elevação lateral halter",   reps: "3x15 + drop",      time: "Nec."},
+        {id: 'd3', name: "Elevação lateral máquina",  reps: "3x12",             time: "1m30"},
+        {id: 'd4', name: "Crucifixo inverso",         reps: "3x15",             time: "1m30"},
+        {id: 'd5', name: "Face pull",                 reps: "3x15",             time: "1m30"},
+        {id: 'd6', name: "Tríceps francês polia",     reps: "3x12",             time: "1m30"},
+        {id: 'd7', name: "Rosca martelo",             reps: "3x12",             time: "1m30"}
+    ]},
+    treinoE: { label: "E", title: "Perna Posterior", exercises: [
+        {id: 'e1', name: "Levantamento terra",        reps: "3x6-8",            time: "Nec."},
+        {id: 'e2', name: "Mesa flexora",              reps: "4x12",             time: "1m30"},
+        {id: 'e3', name: "Elevação pélvica",          reps: "3x12",             time: "Nec."},
+        {id: 'e4', name: "Cadeira abdutora",          reps: "3x13",             time: "1m"},
+        {id: 'e5', name: "Afundo halteres",           reps: "3x12",             time: "1m"}
+    ]}
+};
 
-    let workoutData = {};
-    let currentTabKey = 'treinoA';
+let workoutData = {};
+let currentTabKey = 'treinoA';
+let _currentSyncLink = '';
 
-    // =========================================================
-    // FIX 1: Lembrar aba ativa entre sessões
-    // Salva a chave da aba atual sempre que o usuário a troca,
-    // e restaura essa chave no init() antes de renderizar.
-    // =========================================================
-    function saveActiveTab(key) {
-        localStorage.setItem('app_active_tab', key);
+// ============================================================
+//  HELPERS: localStorage persistência e limpeza
+// ============================================================
+function saveActiveTab(key)    { localStorage.setItem('app_active_tab', key); }
+function loadActiveTab(keys)   {
+    const s = localStorage.getItem('app_active_tab');
+    return (s && keys.includes(s)) ? s : keys[0];
+}
+
+function purgeExerciseData(exId) {
+    ['check_','weight_','note_','pr_'].forEach(p => localStorage.removeItem(p + exId));
+}
+function purgeTabData(tabKey) {
+    if (workoutData[tabKey]) workoutData[tabKey].exercises.forEach(ex => purgeExerciseData(ex.id));
+}
+
+// ============================================================
+//  INIT
+// ============================================================
+function init() {
+    const theme = localStorage.getItem('app_theme') || 'dark';
+    document.body.setAttribute('data-theme', theme);
+    const saved = localStorage.getItem('app_workout_data');
+    workoutData = saved ? JSON.parse(saved) : defaultWorkouts;
+    const keys = Object.keys(workoutData);
+    currentTabKey = loadActiveTab(keys);
+    checkAutoReset();
+    checkSyncOnLoad();
+    renderTabs();
+    renderAll();
+}
+
+// ============================================================
+//  SYNC: auto-detect link no hash da URL
+// ============================================================
+function checkSyncOnLoad() {
+    try {
+        const hash = window.location.hash;
+        if (!hash.startsWith('#sync=')) return;
+        const encoded = hash.replace('#sync=', '');
+        if (!encoded) return;
+        history.replaceState(null, '', window.location.pathname);
+        setTimeout(() => {
+            openSyncModal();
+            switchSyncTab('import');
+            document.getElementById('import-paste').value = 'training-pro://data?v=1&d=' + encoded;
+            showConfirmSyncImport(encoded);
+        }, 400);
+    } catch(e) {}
+}
+
+function showConfirmSyncImport(encoded) {
+    openConfirmModal(
+        'Importar treino sincronizado?',
+        'Um link de sincronização foi detectado. Deseja importar os treinos? Os dados atuais serão substituídos.',
+        () => { doImportFromEncoded(encoded); closeSyncModal(); }
+    );
+}
+
+// ============================================================
+//  SYNC: build payload e link
+// ============================================================
+function buildSyncPayload() {
+    const inclWeights = document.getElementById('opt-weights')?.checked ?? true;
+    const inclNotes   = document.getElementById('opt-notes')?.checked   ?? true;
+    const inclHistory = document.getElementById('opt-history')?.checked ?? false;
+
+    const payload = { w: workoutData };
+    if (inclWeights || inclNotes) {
+        payload.ls = {};
+        for (let i = 0; i < localStorage.length; i++) {
+            const k = localStorage.key(i);
+            if (inclWeights && (k.startsWith('weight_') || k.startsWith('pr_'))) payload.ls[k] = localStorage.getItem(k);
+            if (inclNotes   && k.startsWith('note_'))                             payload.ls[k] = localStorage.getItem(k);
+        }
     }
-
-    function loadActiveTab(keys) {
-        const saved = localStorage.getItem('app_active_tab');
-        // Verifica se a aba salva ainda existe (pode ter sido deletada)
-        if (saved && keys.includes(saved)) return saved;
-        // Fallback para a primeira aba disponível
-        return keys[0];
+    if (inclHistory) {
+        const h = localStorage.getItem('app_history');
+        if (h) payload.h = JSON.parse(h);
     }
+    return btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
+}
 
-    // =========================================================
-    // FIX 2: Limpeza de localStorage ao remover exercício/aba
-    // Remove todas as chaves residuais (check_, weight_, note_,
-    // pr_) associadas a um exercício deletado.
-    // =========================================================
-    function purgeExerciseData(exId) {
-        ['check_', 'weight_', 'note_', 'pr_'].forEach(prefix => {
-            localStorage.removeItem(prefix + exId);
+function buildSyncLink() {
+    const encoded = buildSyncPayload();
+    const base    = window.location.href.split('#')[0].split('?')[0];
+    return { link: base + '#sync=' + encoded, encoded };
+}
+
+function rebuildSyncLink() {
+    if (document.getElementById('sync-modal').style.display !== 'flex') return;
+    const { link } = buildSyncLink();
+    _currentSyncLink = link;
+    document.getElementById('sync-link-text').textContent = link;
+
+    const qrEl = document.getElementById('qr-canvas');
+    qrEl.innerHTML = '';
+    try {
+        new QRCode(qrEl, {
+            text: link.length <= 2800 ? link : 'Link muito grande para QR. Use a opção de copiar o link.',
+            width: 200, height: 200,
+            colorDark: '#0f172a', colorLight: '#ffffff',
+            correctLevel: QRCode.CorrectLevel.M
         });
+    } catch(e) {
+        qrEl.innerHTML = '<p style="font-size:0.75rem; color:#64748b; text-align:center; padding:10px;">Link muito grande para QR.<br>Use a opção de copiar o link.</p>';
     }
+}
 
-    function purgeTabData(tabKey) {
-        // Apaga os dados de todos os exercícios da aba antes de deletá-la
-        if (workoutData[tabKey]) {
-            workoutData[tabKey].exercises.forEach(ex => purgeExerciseData(ex.id));
-        }
+// ============================================================
+//  SYNC: open / close / tabs
+// ============================================================
+function openSyncModal() {
+    closeFabMobile();
+    document.getElementById('sync-modal').style.display = 'flex';
+    switchSyncTab('export');
+    setTimeout(rebuildSyncLink, 80);
+}
+function closeSyncModal() {
+    document.getElementById('sync-modal').style.display = 'none';
+    document.getElementById('import-paste').value = '';
+    document.getElementById('import-success-icon').style.display = 'none';
+    document.getElementById('copy-feedback').style.display = 'none';
+}
+function switchSyncTab(tab) {
+    document.querySelectorAll('.sync-tab').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.sync-panel').forEach(p => p.classList.remove('active'));
+    document.getElementById('stab-' + tab).classList.add('active');
+    document.getElementById('spanel-' + tab).classList.add('active');
+    if (tab === 'export') setTimeout(rebuildSyncLink, 80);
+}
+document.getElementById('sync-modal').addEventListener('click', function(e) { if (e.target === this) closeSyncModal(); });
+
+// ============================================================
+//  SYNC: copiar link
+// ============================================================
+function copySyncLink() {
+    if (!_currentSyncLink) return;
+    navigator.clipboard.writeText(_currentSyncLink).then(() => {
+        const fb = document.getElementById('copy-feedback');
+        fb.style.display = 'block';
+        setTimeout(() => { fb.style.display = 'none'; }, 3000);
+    }).catch(() => {
+        const el = document.getElementById('sync-link-text');
+        const r = document.createRange();
+        r.selectNodeContents(el);
+        window.getSelection().removeAllRanges();
+        window.getSelection().addRange(r);
+    });
+}
+
+// ============================================================
+//  SYNC: importar pelo link colado
+// ============================================================
+function importFromLink() {
+    const raw = document.getElementById('import-paste').value.trim();
+    if (!raw) { document.getElementById('import-paste').focus(); return; }
+    let encoded = null;
+    if      (raw.includes('#sync='))             encoded = raw.split('#sync=')[1];
+    else if (raw.includes('training-pro://data?')) { const m = raw.match(/[?&]d=([^&]+)/); if (m) encoded = m[1]; }
+    else                                          encoded = raw;
+    if (!encoded) { alert('Formato de link inválido. Verifique e tente novamente.'); return; }
+    doImportFromEncoded(encoded);
+}
+
+function doImportFromEncoded(encoded) {
+    try {
+        const payload = JSON.parse(decodeURIComponent(escape(atob(encoded))));
+        if (payload.w)  { workoutData = payload.w; saveData(); }
+        if (payload.ls) Object.keys(payload.ls).forEach(k => localStorage.setItem(k, payload.ls[k]));
+        if (payload.h)  localStorage.setItem('app_history', JSON.stringify(payload.h));
+
+        const el = document.getElementById('import-success-icon');
+        el.style.display = 'block';
+        el.style.animation = 'none';
+        void el.offsetWidth;
+        el.style.animation = 'successPop 0.4s cubic-bezier(0.34,1.56,0.64,1) forwards';
+
+        setTimeout(() => {
+            closeSyncModal();
+            currentTabKey = Object.keys(workoutData)[0];
+            saveActiveTab(currentTabKey);
+            renderTabs(); renderAll();
+        }, 1800);
+    } catch(e) {
+        alert('Erro ao importar: dados inválidos ou corrompidos.\n\n' + e.message);
     }
-    // =========================================================
+}
 
-    function init() {
-        const theme = localStorage.getItem('app_theme') || 'dark';
-        document.body.setAttribute('data-theme', theme);
-        const saved = localStorage.getItem('app_workout_data');
-        workoutData = saved ? JSON.parse(saved) : defaultWorkouts;
+// ============================================================
+//  TREINO DO DIA: sugestão de aba
+// ============================================================
+function getSuggestedTab() {
+    const keys = Object.keys(workoutData);
+    if (!keys.length) return null;
+    const lastKey  = localStorage.getItem('app_last_tab_used');
+    const lastDate = localStorage.getItem('app_last_tab_date');
+    const today = new Date();
+    const todayStr = today.getFullYear() + '-' + String(today.getMonth()+1).padStart(2,'0') + '-' + String(today.getDate()).padStart(2,'0');
+    if (lastDate === todayStr && lastKey && keys.includes(lastKey)) return lastKey;
+    if (!lastKey || !keys.includes(lastKey)) return keys[0];
+    const nextIdx = (keys.indexOf(lastKey) + 1) % keys.length;
+    return keys[nextIdx];
+}
 
-        // FIX 1: restaura a aba que o usuário estava usando
-        const keys = Object.keys(workoutData);
-        currentTabKey = loadActiveTab(keys);
+function registerTabUsage(tabKey) {
+    const today = new Date();
+    const s = today.getFullYear() + '-' + String(today.getMonth()+1).padStart(2,'0') + '-' + String(today.getDate()).padStart(2,'0');
+    localStorage.setItem('app_last_tab_used', tabKey);
+    localStorage.setItem('app_last_tab_date', s);
+}
 
-        checkAutoReset();
-        renderTabs();
-        renderAll();
-    }
+// ============================================================
+//  ABREVIAÇÃO DE LABELS
+// ============================================================
+const STOP_WORDS = new Set(['de','e','o','a','os','as','do','da','dos','das','em','no','na','um','uma']);
+function abbreviateLabel(name) {
+    const t = name.trim();
+    if (t.length <= 6) return t.toUpperCase();
+    const words    = t.split(/\s+/);
+    const relevant = words.filter(w => !STOP_WORDS.has(w.toLowerCase()));
+    if (!relevant.length)     return t.substring(0,4).toUpperCase() + '.';
+    if (relevant.length === 1) return relevant[0].substring(0,4).toUpperCase() + '.';
+    if (relevant.length === 2) return relevant[0][0].toUpperCase() + '&' + relevant[1][0].toUpperCase();
+    return relevant.map(w => w[0].toUpperCase()).join('');
+}
 
-    // =========================================================
-    // FEATURE: Indicador de treino do dia
-    // Lógica: olha o histórico de qual aba foi usada por último
-    // e sugere a próxima na sequência circular das abas.
-    // Se nunca treinou, sugere a primeira aba.
-    // Se treinou hoje, sugere a mesma aba (treino em andamento).
-    // =========================================================
-    function getSuggestedTab() {
-        const keys = Object.keys(workoutData);
-        if (keys.length === 0) return null;
+// ============================================================
+//  RENDER TABS
+// ============================================================
+function renderTabs() {
+    const list        = document.getElementById('tabs-list');
+    const suggestedKey = getSuggestedTab();
+    let html = '';
+    Object.keys(workoutData).forEach(key => {
+        const isActive    = key === currentTabKey ? 'active' : '';
+        const isSuggested = key === suggestedKey  ? 'suggested' : '';
+        html += `
+            <div class="tab-btn-wrapper ${isSuggested}">
+                <button class="btn-tab-rename" onclick="renameTab('${key}')" title="Renomear aba"><i class="ph-bold ph-pencil-simple"></i></button>
+                <button class="btn-tab-manage" onclick="deleteTab('${key}')"><i class="ph-bold ph-x"></i></button>
+                <button class="tab-btn ${isActive}" onclick="showWorkout('${key}')" ondblclick="renameTab('${key}')" oncontextmenu="renameTab('${key}'); return false;" title="${workoutData[key].label}">
+                    ${abbreviateLabel(workoutData[key].label)}
+                </button>
+                <span class="tab-suggested-dot" title="Treino sugerido para hoje"></span>
+            </div>`;
+    });
+    list.innerHTML = html;
+}
 
-        const lastTabKey = localStorage.getItem('app_last_tab_used');
-        const lastTabDate = localStorage.getItem('app_last_tab_date');
+// ============================================================
+//  RENDER EXERCÍCIOS
+// ============================================================
+function renderAll() {
+    const container = document.getElementById('main-container');
+    const data      = workoutData[currentTabKey];
+    if (!data) return;
+    container.classList.remove('tab-content-animate');
+    void container.offsetWidth;
+    container.classList.add('tab-content-animate');
 
-        const today = new Date();
-        const todayStr = today.getFullYear() + '-'
-            + String(today.getMonth() + 1).padStart(2, '0') + '-'
-            + String(today.getDate()).padStart(2, '0');
+    let html = `<h2>${data.title} <i class="ph-bold ph-pencil-simple" onclick="editTitle()" style="cursor:pointer; opacity:0.5; font-size:14px"></i></h2>`;
+    if (!data.exercises.length) {
+        html += `<div class="empty-state"><i class="ph-bold ph-Barbell" style="font-size:3rem; opacity:0.2"></i><p>Nenhum exercício cadastrado.</p></div>`;
+    } else {
+        data.exercises.forEach(ex => {
+            const isChecked  = localStorage.getItem('check_'+ex.id) === 'true';
+            const weight     = localStorage.getItem('weight_'+ex.id) || '';
+            const noteVal    = localStorage.getItem('note_'+ex.id)   || '';
+            const prNum      = parseFloat(localStorage.getItem('pr_'+ex.id)) || 0;
+            const currentNum = parseFloat(weight.replace(',','.').replace(/[^0-9.]/g,''));
+            const isPR       = (!isNaN(currentNum) && currentNum >= prNum && prNum > 0);
 
-        // Se treinou hoje: sugere a mesma aba (pode estar no meio do treino)
-        if (lastTabDate === todayStr && lastTabKey && keys.includes(lastTabKey)) {
-            return lastTabKey;
-        }
-
-        // Se nunca treinou ou aba foi deletada: sugere a primeira
-        if (!lastTabKey || !keys.includes(lastTabKey)) {
-            return keys[0];
-        }
-
-        // Sugere a próxima aba na sequência circular
-        const lastIndex = keys.indexOf(lastTabKey);
-        const nextIndex = (lastIndex + 1) % keys.length;
-        return keys[nextIndex];
-    }
-
-    // Registra qual aba foi usada e em qual data ao checar um exercício
-    function registerTabUsage(tabKey) {
-        const today = new Date();
-        const todayStr = today.getFullYear() + '-'
-            + String(today.getMonth() + 1).padStart(2, '0') + '-'
-            + String(today.getDate()).padStart(2, '0');
-        localStorage.setItem('app_last_tab_used', tabKey);
-        localStorage.setItem('app_last_tab_date', todayStr);
-    }
-    // =========================================================
-
-    function renderTabs() {
-        const list = document.getElementById('tabs-list');
-        const suggestedKey = getSuggestedTab();
-        let html = '';
-        Object.keys(workoutData).forEach(key => {
-            const isActive = key === currentTabKey ? 'active' : '';
-            const isSuggested = key === suggestedKey ? 'suggested' : '';
             html += `
-                <div class="tab-btn-wrapper ${isSuggested}">
-                    <button class="btn-tab-rename" onclick="renameTab('${key}')" title="Renomear aba"><i class="ph-bold ph-pencil-simple"></i></button>
-                    <button class="btn-tab-manage" onclick="deleteTab('${key}')"><i class="ph-bold ph-x"></i></button>
-                    <button class="tab-btn ${isActive}" onclick="showWorkout('${key}', this)" ondblclick="renameTab('${key}')" oncontextmenu="renameTab('${key}'); return false;" title="${workoutData[key].label}">
-                        ${abbreviateLabel(workoutData[key].label)}
-                    </button>
-                    <span class="tab-suggested-dot" title="Treino sugerido para hoje"></span>
-                </div>`;
-        });
-        list.innerHTML = html;
-    }
-
-    function renderAll() {
-        const container = document.getElementById('main-container');
-        const data = workoutData[currentTabKey];
-        if(!data) return;
-
-        container.classList.remove('tab-content-animate');
-        void container.offsetWidth;
-        container.classList.add('tab-content-animate');
-
-        let html = `<h2>${data.title} <i class="ph-bold ph-pencil-simple" onclick="editTitle()" style="cursor:pointer; opacity:0.5; font-size:14px"></i></h2>`;
-        
-        if (data.exercises.length === 0) {
-            html += `<div class="empty-state"><i class="ph-bold ph-Barbell" style="font-size:3rem; opacity:0.2"></i><p>Nenhum exercício cadastrado.</p></div>`;
-        } else {
-            data.exercises.forEach(ex => {
-                const isChecked = localStorage.getItem('check_'+ex.id) === 'true';
-                const weight = localStorage.getItem('weight_'+ex.id) || '';
-                const noteVal = localStorage.getItem('note_'+ex.id) || '';
-                
-                const prStr = localStorage.getItem('pr_'+ex.id);
-                const prNum = prStr ? parseFloat(prStr) : 0;
-                const currentNum = parseFloat(weight.replace(',', '.').replace(/[^0-9.]/g, ''));
-                const isPR = (!isNaN(currentNum) && currentNum >= prNum && prNum > 0);
-
-                html += `
-                <div class="exercise-card ${isChecked ? 'completed' : ''}" id="card_${ex.id}">
-                    <button class="btn-remove" onclick="removeEx('${currentTabKey}', '${ex.id}')"><i class="ph-bold ph-x"></i></button>
-                    <button class="btn-edit-ex" onclick="editEx('${currentTabKey}', '${ex.id}')"><i class="ph-bold ph-pencil-simple"></i></button>
-                    <label class="custom-checkbox">
-                        <input type="checkbox" onchange="toggleCheck('${ex.id}', this)" ${isChecked ? 'checked' : ''}>
-                        <span class="checkmark"></span>
-                    </label>
-                    <div style="flex-grow:1; width:100%;">
-                        <span class="ex-name">
-                            ${ex.name}
-                            ${ex.link ? `<a href="${ex.link}" target="_blank" style="color:var(--primary);"><i class="ph-bold ph-youtube-logo"></i></a>` : ''}
-                            <i class="ph-bold ph-note-pencil" onclick="toggleNote('${ex.id}')" style="cursor:pointer; opacity:0.5; font-size:1.1rem"></i>
-                        </span>
-
-                        ${noteVal ? `<div class="exercise-note-display" onclick="toggleNote('${ex.id}')">${noteVal.replace(/\n/g, '<br>')}</div>` : ''}
-                        <textarea class="exercise-note" id="note_${ex.id}" onchange="saveNote('${ex.id}', this.value)" placeholder="Dicas (ex: banco altura 3)...">${noteVal}</textarea>
-                        
-                        <div style="display:flex; gap:20px; margin-top:10px">
-                            <div><span class="info-label">Séries</span><br><span class="info-value">${ex.reps}</span></div>
-                            <div>
-                                <span class="info-label" style="${isPR ? 'color:var(--gold)' : ''}">Peso ${isPR ? '<i class="ph-fill ph-trophy" style="color:var(--gold)"></i>' : ''}</span><br>
-                                <input type="text" id="weight_${ex.id}" class="weight-input ${isPR ? 'pr-active' : ''}" value="${weight}" onchange="saveWeight('${ex.id}', this.value)" placeholder="0kg">
-                            </div>
-                            <div><span class="info-label">Pausa</span><br><span class="info-value ${ex.time !== 'Nec.' ? 'timer-trigger' : ''}" onclick="startTimer('${ex.time}')">${ex.time}</span></div>
+            <div class="exercise-card ${isChecked ? 'completed' : ''}" id="card_${ex.id}">
+                <button class="btn-remove"  onclick="removeEx('${currentTabKey}','${ex.id}')"><i class="ph-bold ph-x"></i></button>
+                <button class="btn-edit-ex" onclick="editEx('${currentTabKey}','${ex.id}')"><i class="ph-bold ph-pencil-simple"></i></button>
+                <label class="custom-checkbox">
+                    <input type="checkbox" onchange="toggleCheck('${ex.id}',this)" ${isChecked ? 'checked' : ''}>
+                    <span class="checkmark"></span>
+                </label>
+                <div style="flex-grow:1; width:100%;">
+                    <span class="ex-name">
+                        ${ex.name}
+                        ${ex.link ? `<a href="${ex.link}" target="_blank" style="color:var(--primary);"><i class="ph-bold ph-youtube-logo"></i></a>` : ''}
+                        <i class="ph-bold ph-note-pencil" onclick="toggleNote('${ex.id}')" style="cursor:pointer; opacity:0.5; font-size:1.1rem"></i>
+                    </span>
+                    ${noteVal ? `<div class="exercise-note-display" onclick="toggleNote('${ex.id}')">${noteVal.replace(/\n/g,'<br>')}</div>` : ''}
+                    <textarea class="exercise-note" id="note_${ex.id}" onchange="saveNote('${ex.id}',this.value)" placeholder="Dicas (ex: banco altura 3)...">${noteVal}</textarea>
+                    <div style="display:flex; gap:20px; margin-top:10px">
+                        <div><span class="info-label">Séries</span><br><span class="info-value">${ex.reps}</span></div>
+                        <div>
+                            <span class="info-label" style="${isPR ? 'color:var(--gold)' : ''}">Peso ${isPR ? '<i class="ph-fill ph-trophy" style="color:var(--gold)"></i>' : ''}</span><br>
+                            <input type="text" id="weight_${ex.id}" class="weight-input ${isPR ? 'pr-active' : ''}" value="${weight}" onchange="saveWeight('${ex.id}',this.value)" placeholder="0kg">
                         </div>
+                        <div><span class="info-label">Pausa</span><br><span class="info-value ${ex.time !== 'Nec.' ? 'timer-trigger' : ''}" onclick="startTimer('${ex.time}')">${ex.time}</span></div>
                     </div>
-                </div>`;
-            });
-        }
-        container.innerHTML = html;
-        updateProgressBar();
-    }
-
-    // =========================================================
-    // Abreviação automática de nomes longos nas abas
-    // Regras em ordem:
-    //   1. Nome curto (≤ 6 chars): exibe como está em maiúsculas
-    //   2. Uma palavra longa: pega as 4 primeiras letras + "."
-    //   3. Múltiplas palavras: inicial de cada palavra relevante
-    //      (ignora artigos/preposições: de, e, o, a, do, da, em)
-    // Exemplos:
-    //   "Perna" → "PERNA"
-    //   "Peito e Tríceps" → "P&T"
-    //   "Costas e Bíceps" → "C&B"
-    //   "Membros Superiores" → "MS"
-    //   "Treino de Força" → "TF"
-    // =========================================================
-    const STOP_WORDS = new Set(['de','e','o','a','os','as','do','da','dos','das','em','no','na','um','uma']);
-
-    function abbreviateLabel(name) {
-        const trimmed = name.trim();
-        if (trimmed.length <= 6) return trimmed.toUpperCase();
-
-        const words = trimmed.split(/\s+/);
-        const relevant = words.filter(w => !STOP_WORDS.has(w.toLowerCase()));
-
-        if (relevant.length === 0) return trimmed.substring(0, 4).toUpperCase() + '.';
-        if (relevant.length === 1) return relevant[0].substring(0, 4).toUpperCase() + '.';
-
-        // Iniciais das palavras relevantes, unidas por & se forem 2, sem separador se mais
-        if (relevant.length === 2) {
-            return relevant[0][0].toUpperCase() + '&' + relevant[1][0].toUpperCase();
-        }
-        return relevant.map(w => w[0].toUpperCase()).join('');
-    }
-
-    function showWorkout(key, btn) {
-        currentTabKey = key;
-        saveActiveTab(key); // FIX 1: persiste a aba escolhida
-        renderTabs();
-        renderAll();
-    }
-
-    function addTab() {
-        openInputModal('Nova aba de treino', 'Ex: Pernas, Glúteos…', '', (name) => {
-            if(!name.trim()) return;
-            const id = 'treino' + Date.now();
-            workoutData[id] = { label: name.trim(), title: name.trim(), exercises: [] };
-            saveData();
-            currentTabKey = id;
-            saveActiveTab(id);
-            renderTabs();
-            renderAll();
+                </div>
+            </div>`;
         });
     }
+    container.innerHTML = html;
+    updateProgressBar();
+}
 
-    function renameTab(key) {
-        openInputModal('Renomear aba', 'Novo nome', workoutData[key].label, (n) => {
-            if(!n.trim()) return;
-            workoutData[key].label = n.trim();
-            saveData(); renderTabs();
-        });
+// ============================================================
+//  NAVIGATION
+// ============================================================
+function showWorkout(key) {
+    currentTabKey = key;
+    saveActiveTab(key);
+    renderTabs(); renderAll();
+}
+
+function addTab() {
+    openInputModal('Nova aba de treino', 'Ex: Pernas, Glúteos…', '', (name) => {
+        if (!name.trim()) return;
+        const id = 'treino' + Date.now();
+        workoutData[id] = { label: name.trim(), title: name.trim(), exercises: [] };
+        saveData(); currentTabKey = id; saveActiveTab(id); renderTabs(); renderAll();
+    });
+}
+
+function renameTab(key) {
+    openInputModal('Renomear aba', 'Novo nome', workoutData[key].label, (n) => {
+        if (!n.trim()) return;
+        workoutData[key].label = n.trim();
+        saveData(); renderTabs();
+    });
+}
+
+function deleteTab(key) {
+    if (Object.keys(workoutData).length <= 1) {
+        openConfirmModal('Ação não permitida', 'Mantenha ao menos um treino cadastrado.', null, true); return;
     }
-
-    function deleteTab(key) {
-        if(Object.keys(workoutData).length <= 1) {
-            openConfirmModal('Ação não permitida', 'Mantenha ao menos um treino cadastrado.', null, true);
-            return;
-        }
-        openConfirmModal(
-            `Excluir aba "${workoutData[key].label}"?`,
-            'Todos os exercícios desta aba serão removidos permanentemente.',
-            () => {
-                purgeTabData(key); // FIX 2: limpa localStorage dos exercícios da aba
-                delete workoutData[key];
-                currentTabKey = Object.keys(workoutData)[0];
-                saveActiveTab(currentTabKey); // FIX 1: atualiza a aba ativa salva
-                saveData(); renderTabs(); renderAll();
-            }
-        );
-    }
-
-    function editTitle() {
-        openInputModal('Renomear treino', 'Novo título', workoutData[currentTabKey].title, (t) => {
-            if(!t.trim()) return;
-            workoutData[currentTabKey].title = t;
-            saveData(); renderAll();
-        });
-    }
-
-    function editEx(key, id) {
-        const ex = workoutData[key].exercises.find(e => e.id === id);
-        if(!ex) return;
-        openExModal('edit', key, ex);
-    }
-
-    function toggleCheck(id, el) {
-        localStorage.setItem('check_'+id, el.checked);
-        if(el.checked) {
-            localStorage.setItem('app_last_active', Date.now());
-            registerTabUsage(currentTabKey); // registra qual aba e data foi usada
-            const d = new Date();
-            const dateStr = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
-            const history = JSON.parse(localStorage.getItem('app_history') || '{}');
-            history[dateStr] = true;
-            localStorage.setItem('app_history', JSON.stringify(history));
-        }
-        document.getElementById('card_'+id).classList.toggle('completed', el.checked);
-        updateProgressBar();
-    }
-
-    function updateProgressBar() {
-        const exes = workoutData[currentTabKey].exercises;
-        const checked = exes.filter(ex => localStorage.getItem('check_'+ex.id) === 'true').length;
-        const percent = exes.length > 0 ? Math.round((checked / exes.length) * 100) : 0;
-        document.getElementById('summary-text').innerText = `${checked} de ${exes.length} concluídos (${percent}%)`;
-        document.getElementById('summary-bar-fill').style.width = percent + '%';
-    }
-
-    function toggleFab() { 
-        document.getElementById('fab-menu').classList.toggle('show'); 
-        document.getElementById('fab-btn').classList.toggle('active'); 
-    }
-    
-    function closeFabMobile() { if(window.innerWidth < 1024 && document.getElementById('fab-menu').classList.contains('show')) toggleFab(); }
-
-    function fabEdit() { 
-        document.body.classList.toggle('edit-mode'); 
-        const isEdit = document.body.classList.contains('edit-mode');
-        const text = isEdit ? `<i class="ph-bold ph-check"></i> Sair Edição` : `<i class="ph-bold ph-gear"></i> Modo Edição`;
-        document.getElementById('edit-fab-text').innerHTML = text;
-        if(document.getElementById('desktop-edit-btn')) document.getElementById('desktop-edit-btn').innerHTML = text;
-        closeFabMobile(); 
-    }
-
-    function fabAdd() {
-        closeFabMobile();
-        openExModal('new', null, null);
-    }
-
-    function fabReset() {
-        closeFabMobile();
-        openConfirmModal(
-            'Limpar treino de hoje?',
-            'Todas as marcações do treino atual serão apagadas.',
-            () => {
-                workoutData[currentTabKey].exercises.forEach(ex => localStorage.setItem('check_'+ex.id, 'false'));
-                renderAll();
-            }
-        );
-    }
-
-    function removeEx(key, id) {
-        workoutData[key].exercises = workoutData[key].exercises.filter(ex => ex.id !== id);
-        purgeExerciseData(id); // FIX 2: limpa os dados do exercício deletado
-        saveData();
-        renderAll();
-    }
-    
-    function saveWeight(id, val) { 
-        localStorage.setItem('weight_'+id, val); 
-        const num = parseFloat(val.replace(',', '.').replace(/[^0-9.]/g, ''));
-        if(!isNaN(num)) {
-            let pr = parseFloat(localStorage.getItem('pr_'+id)) || 0;
-            if(num > pr) localStorage.setItem('pr_'+id, num);
-        }
-        renderAll();
-    }
-
-    function toggleNote(id) {
-        const textarea = document.getElementById('note_'+id);
-        const isOpening = !textarea.classList.contains('show');
-        textarea.classList.toggle('show');
-
-        // Esconde o display estático ao abrir o textarea para edição
-        const card = document.getElementById('card_'+id);
-        if (card) {
-            const display = card.querySelector('.exercise-note-display');
-            if (display) display.style.display = isOpening ? 'none' : '';
-        }
-
-        if (isOpening) textarea.focus();
-    }
-
-    function saveNote(id, val) {
-        localStorage.setItem('note_'+id, val);
-
-        // Atualiza o display inline sem re-render completo
-        const card = document.getElementById('card_'+id);
-        if (card) {
-            const textarea = card.querySelector('.exercise-note');
-            let display = card.querySelector('.exercise-note-display');
-            if (val.trim()) {
-                if (!display) {
-                    display = document.createElement('div');
-                    display.className = 'exercise-note-display';
-                    display.onclick = () => toggleNote(id);
-                    textarea.parentNode.insertBefore(display, textarea);
-                }
-                display.innerHTML = val.replace(/\n/g, '<br>');
-                display.style.display = '';
-            } else if (display) {
-                display.remove();
-            }
-        }
-    }
-    function saveData() { localStorage.setItem('app_workout_data', JSON.stringify(workoutData)); }
-
-    function toggleTheme() {
-        const current = document.body.getAttribute('data-theme');
-        const next = current === 'dark' ? 'light' : 'dark';
-        document.body.setAttribute('data-theme', next);
-        localStorage.setItem('app_theme', next);
-        closeFabMobile();
-    }
-
-    function openHistory() {
-        const grid = document.getElementById('heatmap-grid');
-        grid.innerHTML = '';
-        const history = JSON.parse(localStorage.getItem('app_history') || '{}');
-        const today = new Date();
-
-        for(let i=27; i>=0; i--) {
-            const d = new Date();
-            d.setDate(today.getDate() - i);
-            const dateStr = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
-            const didWorkout = history[dateStr];
-            
-            const square = document.createElement('div');
-            square.className = 'heat-square';
-            square.style.background = didWorkout ? 'var(--success)' : 'rgba(0,0,0,0.1)';
-            square.innerText = d.getDate();
-            grid.appendChild(square);
-        }
-        document.getElementById('history-modal').style.display = 'flex';
-        closeFabMobile();
-    }
-
-    function exportData() {
-        const weights = {};
-        for(let i=0; i<localStorage.length; i++){
-            let key = localStorage.key(i);
-            if(key.startsWith('weight_') || key.startsWith('note_') || key.startsWith('pr_') || key === 'app_history') {
-                weights[key] = localStorage.getItem(key);
-            }
-        }
-        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify({workoutData, weights}));
-        const dl = document.createElement('a'); dl.setAttribute("href", dataStr); dl.setAttribute("download", "backup_treino.json"); dl.click();
-        closeFabMobile();
-    }
-
-    function importData(event) {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            const d = JSON.parse(e.target.result);
-            if(d.weights) Object.keys(d.weights).forEach(k => localStorage.setItem(k, d.weights[k]));
-            if(d.workoutData) { workoutData = d.workoutData; saveData(); }
-            location.reload();
-        };
-        reader.readAsText(event.target.files[0]);
-    }
-
-    // =========================================================
-    // US01 — Exportar Ficha de Treino para PDF
-    // Gera um PDF client-side com jsPDF.
-    // Cada aba vira uma seção com tabela de exercícios.
-    // RN03: bloqueia exportação se não houver nenhum exercício.
-    // =========================================================
-    function exportPDF() {
-        closeFabMobile();
-
-        // RN03 — verifica se há ao menos um exercício em qualquer aba
-        const hasExercises = Object.values(workoutData).some(t => t.exercises.length > 0);
-        if (!hasExercises) {
-            openConfirmModal(
-                'Nenhum exercício cadastrado',
-                'Adicione pelo menos um exercício antes de exportar sua ficha.',
-                null, true
-            );
-            return;
-        }
-
-        const { jsPDF } = window.jspdf;
-        const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-        const pageW = 210, margin = 14, colW = pageW - margin * 2;
-        let y = 20;
-
-        // Marca d'água de origem para validação na importação
-        doc.setProperties({ subject: 'TRAINING_PRO_EXPORT_V1' });
-
-        // Cabeçalho
-        doc.setFillColor(14, 165, 233); // --primary blue
-        doc.rect(0, 0, pageW, 14, 'F');
-        doc.setTextColor(255, 255, 255);
-        doc.setFontSize(11);
-        doc.setFont('helvetica', 'bold');
-        doc.text('FICHA DE TREINO — TRAINING PRO', pageW / 2, 9.5, { align: 'center' });
-
-        const today = new Date().toLocaleDateString('pt-BR');
-        doc.setFontSize(7);
-        doc.setFont('helvetica', 'normal');
-        doc.text(`Gerado em: ${today}`, pageW - margin, 9.5, { align: 'right' });
-
-        y = 22;
-
-        Object.keys(workoutData).forEach((key, tabIndex) => {
-            const tab = workoutData[key];
-            if (tab.exercises.length === 0) return; // ***** abas vazias
-
-            // Nova página a partir da segunda aba (se não couber)
-            if (tabIndex > 0 && y > 250) {
-                doc.addPage();
-                y = 15;
-            }
-
-            // Título da aba
-            doc.setFillColor(30, 41, 59);
-            doc.roundedRect(margin, y, colW, 9, 2, 2, 'F');
-            doc.setTextColor(56, 189, 248);
-            doc.setFontSize(9);
-            doc.setFont('helvetica', 'bold');
-            doc.text(`${abbreviateLabel(tab.label)}  —  ${tab.title.toUpperCase()}`, margin + 4, y + 6);
-            y += 13;
-
-            // Cabeçalho da tabela
-            const cols = { name: margin, reps: margin + 90, time: margin + 130, weight: margin + 160 };
-            doc.setFillColor(248, 250, 252);
-            doc.rect(margin, y, colW, 7, 'F');
-            doc.setTextColor(100, 116, 139);
-            doc.setFontSize(7.5);
-            doc.setFont('helvetica', 'bold');
-            doc.text('EXERCÍCIO', cols.name + 2, y + 5);
-            doc.text('SÉRIES', cols.reps, y + 5);
-            doc.text('PAUSA', cols.time, y + 5);
-            doc.text('PESO REG.', cols.weight, y + 5);
-            y += 7;
-
-            // Linhas de exercícios
-            tab.exercises.forEach((ex, i) => {
-                if (y > 272) { doc.addPage(); y = 15; }
-
-                const rowH = 8;
-                const bg = i % 2 === 0 ? [255,255,255] : [241, 245, 249];
-                doc.setFillColor(...bg);
-                doc.rect(margin, y, colW, rowH, 'F');
-
-                doc.setTextColor(30, 41, 59);
-                doc.setFontSize(8);
-                doc.setFont('helvetica', 'normal');
-
-                // Nome truncado para caber na coluna
-                const nameMax = 52;
-                const nameStr = ex.name.length > nameMax ? ex.name.substring(0, nameMax) + '…' : ex.name;
-                doc.text(nameStr, cols.name + 2, y + 5.5);
-                doc.text(ex.reps, cols.reps, y + 5.5);
-                doc.text(ex.time, cols.time, y + 5.5);
-
-                const savedWeight = localStorage.getItem('weight_' + ex.id) || '—';
-                doc.text(savedWeight, cols.weight, y + 5.5);
-
-                // Linha separadora
-                doc.setDrawColor(226, 232, 240);
-                doc.line(margin, y + rowH, margin + colW, y + rowH);
-                y += rowH;
-            });
-
-            y += 8; // espaço entre abas
-        });
-
-        // Rodapé em todas as páginas
-        const totalPages = doc.getNumberOfPages();
-        for (let p = 1; p <= totalPages; p++) {
-            doc.setPage(p);
-            doc.setFontSize(7);
-            doc.setTextColor(148, 163, 184);
-            doc.setFont('helvetica', 'normal');
-            doc.text(`Training Pro  •  Página ${p} de ${totalPages}`, pageW / 2, 292, { align: 'center' });
-        }
-
-        doc.save('ficha_treino.pdf');
-    }
-
-    // =========================================================
-    // US02 — Importar Ficha de Treino via PDF
-    // Usa PDF.js para extrair texto e faz parsing do padrão
-    // gerado pelo exportPDF acima.
-    // RN01: confirma sobrescrita antes de importar.
-    // RN02: valida que o PDF foi gerado pelo Training Pro.
-    // RN04: rejeita arquivos maiores que 2 MB.
-    // =========================================================
-    async function importPDF(event) {
-        const file = event.target.files[0];
-        event.target.value = ''; // reseta input para permitir reimport
-        if (!file) return;
-
-        // RN04 — limite de 2 MB
-        if (file.size > 2 * 1024 * 1024) {
-            openConfirmModal(
-                'Arquivo muito grande',
-                'O PDF deve ter no máximo 2 MB. Tente exportar novamente pelo Training Pro.',
-                null, true
-            );
-            return;
-        }
-
-        // RN01 — confirmação de sobrescrita
-        openConfirmModal(
-            'Importar Ficha PDF?',
-            'Os treinos atuais serão substituídos pelos dados do arquivo. Esta ação não pode ser desfeita.',
-            async () => {
-                try {
-                    const arrayBuffer = await file.arrayBuffer();
-
-                    // Configura worker do PDF.js
-                    pdfjsLib.GlobalWorkerOptions.workerSrc =
-                        'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-
-                    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-
-                    // Extrai todo o texto do PDF
-                    let fullText = '';
-                    for (let p = 1; p <= pdf.numPages; p++) {
-                        const page = await pdf.getPage(p);
-                        const content = await page.getTextContent();
-                        fullText += content.items.map(i => i.str).join(' ') + '\n';
-                    }
-
-                    // RN02 — valida origem: o PDF deve ter a marca do Training Pro
-                    if (!fullText.includes('TRAINING PRO') && !fullText.includes('FICHA DE TREINO')) {
-                        openConfirmModal(
-                            'PDF não reconhecido',
-                            'Este PDF não segue o formato do Training Pro e não pôde ser importado.',
-                            null, true
-                        );
-                        return;
-                    }
-
-                    // Parsing: extrai abas e exercícios
-                    // Padrão do cabeçalho de aba: "LABEL — TÍTULO"  (gerado por exportPDF)
-                    // Padrão de linha de exercício: nome  séries  pausa  peso
-                    const parsed = {};
-                    const lines = fullText.split('\n').map(l => l.trim()).filter(Boolean);
-
-                    let currentKey = null;
-
-                    // Detecta seção de aba pelo padrão "X — NOME DO TREINO"
-                    const tabHeaderRe = /^(.+?)\s+[—\-–]\s+(.+)$/;
-                    // Detecta linha de cabeçalho da tabela (ignora)
-                    const tableHeaderRe = /^EXERCÍCIO\s+SÉRIES/i;
-                    // Detecta rodapé (ignora)
-                    const footerRe = /Training Pro\s*•\s*Página/i;
-                    // Detecta linha de data do cabeçalho (ignora)
-                    const dateRe = /^Gerado em:/i;
-
-                    lines.forEach(line => {
-                        if (tableHeaderRe.test(line)) return;
-                        if (footerRe.test(line)) return;
-                        if (dateRe.test(line)) return;
-                        if (line === 'FICHA DE TREINO — TRAINING PRO') return;
-
-                        const tabMatch = line.match(tabHeaderRe);
-                        if (tabMatch) {
-                            const label = tabMatch[1].trim();
-                            const title = tabMatch[2].trim();
-                            // Capitaliza o título
-                            const titleCased = title.charAt(0).toUpperCase() + title.slice(1).toLowerCase();
-                            currentKey = 'treino_' + label.replace(/\s+/g,'_');
-                            parsed[currentKey] = { label, title: titleCased, exercises: [] };
-                            return;
-                        }
-
-                        if (!currentKey) return;
-
-                        // Linha de exercício: últimas colunas são pausa e peso (curtas)
-                        // Padrão: "Nome do Exercício   3x12   1m30   80kg"
-                        // Usa regex que separa pelo padrão de séries (NxN) como âncora
-                        const exRe = /^(.+?)\s{2,}(\S.*?\S|\S)\s{2,}(\S+)\s{2,}(\S+)\s*$/;
-                        const exMatch = line.match(exRe);
-                        if (exMatch) {
-                            parsed[currentKey].exercises.push({
-                                id: 'ex_' + Date.now() + '_' + Math.random().toString(36).substr(2,5),
-                                name: exMatch[1].trim().replace(/…$/, ''),
-                                reps: exMatch[2].trim(),
-                                time: exMatch[3].trim(),
-                            });
-                        }
-                    });
-
-                    const tabCount = Object.keys(parsed).length;
-                    if (tabCount === 0) {
-                        openConfirmModal(
-                            'Nenhum dado encontrado',
-                            'Não foi possível extrair exercícios deste PDF. Certifique-se de que foi gerado pelo Training Pro.',
-                            null, true
-                        );
-                        return;
-                    }
-
-                    // Aplica dados importados
-                    workoutData = parsed;
-                    currentTabKey = Object.keys(parsed)[0];
-                    saveData();
-                    saveActiveTab(currentTabKey);
-                    renderTabs();
-                    renderAll();
-
-                    openConfirmModal(
-                        'Importação concluída ✓',
-                        `${tabCount} aba(s) importada(s) com sucesso.`,
-                        null, true
-                    );
-
-                } catch (err) {
-                    openConfirmModal(
-                        'Erro ao ler o arquivo',
-                        'Não foi possível processar o PDF. Verifique se o arquivo não está corrompido.',
-                        null, true
-                    );
-                }
-            }
-        );
-    }
-    // =========================================================
-
-    let timerInterval;
-    function startTimer(t) {
-        if(t === 'Nec.') return;
-        stopTimer();
-        
-        let totalSec = t.includes('m') ? parseInt(t.split('m')[0])*60 + (parseInt(t.split('m')[1])||0) : parseInt(t);
-        let sec = totalSec;
-        
-        const widget = document.getElementById('timer-widget');
-        const text = document.getElementById('timer-text');
-        const ring = document.getElementById('progress-ring');
-        const circumference = 283;
-        
-        widget.style.display = 'flex';
-        ring.style.strokeDashoffset = 0;
-        ring.style.stroke = 'var(--primary)';
-        text.innerText = sec;
-
-        timerInterval = setInterval(() => {
-            sec--;
-            text.innerText = sec;
-            
-            const offset = circumference - (sec / totalSec) * circumference;
-            ring.style.strokeDashoffset = offset;
-
-            if (sec <= totalSec * 0.2) {
-                ring.style.stroke = 'var(--danger)';
-            } else if (sec <= totalSec * 0.5) {
-                ring.style.stroke = 'var(--gold)';
-            }
-
-            if(sec <= 0) { 
-                clearInterval(timerInterval); 
-                text.innerText = "OK";
-                ring.style.stroke = 'var(--success)';
-                if(navigator.vibrate) navigator.vibrate([200, 100, 200]);
-                setTimeout(stopTimer, 2500);
-            }
-        }, 1000);
-    }
-
-    function stopTimer() { 
-        clearInterval(timerInterval); 
-        document.getElementById('timer-widget').style.display = 'none'; 
-    }
-
-    /* ===== MODAIS ===== */
-
-    let _inputCallback = null;
-    function openInputModal(title, placeholder, defaultValue, callback) {
-        _inputCallback = callback;
-        document.getElementById('input-modal-title').innerText = title;
-        const field = document.getElementById('input-modal-field');
-        field.placeholder = placeholder;
-        field.value = defaultValue || '';
-        document.getElementById('input-modal').style.display = 'flex';
-        setTimeout(() => { field.focus(); field.select(); }, 80);
-        document.getElementById('input-modal-confirm').onclick = () => {
-            const val = field.value.trim();
-            if(val && _inputCallback) _inputCallback(val);
-            closeInputModal();
-        };
-        field.onkeydown = (e) => { if(e.key === 'Enter') document.getElementById('input-modal-confirm').click(); if(e.key === 'Escape') closeInputModal(); };
-    }
-    function closeInputModal() {
-        document.getElementById('input-modal').style.display = 'none';
-        _inputCallback = null;
-    }
-
-    let _confirmCallback = null;
-    function openConfirmModal(title, msg, callback, infoOnly = false) {
-        _confirmCallback = callback;
-        document.getElementById('confirm-modal-title').innerText = title;
-        document.getElementById('confirm-modal-msg').innerText = msg;
-        const okBtn = document.getElementById('confirm-modal-ok');
-        if(infoOnly) {
-            okBtn.style.display = 'none';
-        } else {
-            okBtn.style.display = '';
-            okBtn.onclick = () => { if(_confirmCallback) _confirmCallback(); closeConfirmModal(); };
-        }
-        document.getElementById('confirm-modal').style.display = 'flex';
-    }
-    function closeConfirmModal() {
-        document.getElementById('confirm-modal').style.display = 'none';
-        _confirmCallback = null;
-    }
-
-    let _exModalMode = null, _exModalKey = null, _exModalId = null;
-    function openExModal(mode, key, ex) {
-        _exModalMode = mode;
-        _exModalKey = key || currentTabKey;
-        _exModalId = ex ? ex.id : null;
-
-        document.getElementById('exercise-modal-title').innerText = mode === 'edit' ? 'Editar Exercício' : 'Novo Exercício';
-        document.getElementById('ex-modal-name').value  = ex ? ex.name  : '';
-        document.getElementById('ex-modal-reps').value  = ex ? ex.reps  : '3x12';
-        document.getElementById('ex-modal-time').value  = ex ? ex.time  : '1m30';
-        document.getElementById('ex-modal-link').value  = ex ? (ex.link || '') : '';
-        document.getElementById('exercise-modal').style.display = 'flex';
-        setTimeout(() => document.getElementById('ex-modal-name').focus(), 80);
-
-        document.getElementById('ex-modal-confirm').onclick = saveExModal;
-        document.getElementById('ex-modal-name').onkeydown = (e) => { if(e.key === 'Enter') document.getElementById('ex-modal-confirm').click(); };
-    }
-    function closeExModal() {
-        document.getElementById('exercise-modal').style.display = 'none';
-    }
-    function saveExModal() {
-        const name = document.getElementById('ex-modal-name').value.trim();
-        if(!name) { document.getElementById('ex-modal-name').focus(); return; }
-        const reps = document.getElementById('ex-modal-reps').value.trim() || '3x12';
-        const time = document.getElementById('ex-modal-time').value.trim() || '1m30';
-        const link = document.getElementById('ex-modal-link').value.trim();
-
-        if(_exModalMode === 'new') {
-            workoutData[_exModalKey].exercises.push({ id: 'ex_'+Date.now(), name, reps, time, link });
-        } else {
-            const ex = workoutData[_exModalKey].exercises.find(e => e.id === _exModalId);
-            if(ex) { ex.name = name; ex.reps = reps; ex.time = time; ex.link = link; }
-        }
+    openConfirmModal(`Excluir aba "${workoutData[key].label}"?`, 'Todos os exercícios desta aba serão removidos permanentemente.', () => {
+        purgeTabData(key);
+        delete workoutData[key];
+        currentTabKey = Object.keys(workoutData)[0];
+        saveActiveTab(currentTabKey);
+        saveData(); renderTabs(); renderAll();
+    });
+}
+
+function editTitle() {
+    openInputModal('Renomear treino', 'Novo título', workoutData[currentTabKey].title, (t) => {
+        if (!t.trim()) return;
+        workoutData[currentTabKey].title = t;
         saveData(); renderAll();
-        closeExModal();
+    });
+}
+
+function editEx(key, id) {
+    const ex = workoutData[key].exercises.find(e => e.id === id);
+    if (ex) openExModal('edit', key, ex);
+}
+
+// ============================================================
+//  CHECK / WEIGHT / NOTES
+// ============================================================
+function toggleCheck(id, el) {
+    localStorage.setItem('check_'+id, el.checked);
+    if (el.checked) {
+        localStorage.setItem('app_last_active', Date.now());
+        registerTabUsage(currentTabKey);
+        const d = new Date();
+        const ds = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+        const hist = JSON.parse(localStorage.getItem('app_history') || '{}');
+        hist[ds] = true;
+        localStorage.setItem('app_history', JSON.stringify(hist));
     }
+    document.getElementById('card_'+id).classList.toggle('completed', el.checked);
+    updateProgressBar();
+}
 
-    document.getElementById('input-modal').addEventListener('click', function(e){ if(e.target===this) closeInputModal(); });
-    document.getElementById('confirm-modal').addEventListener('click', function(e){ if(e.target===this) closeConfirmModal(); });
-    document.getElementById('exercise-modal').addEventListener('click', function(e){ if(e.target===this) closeExModal(); });
+function updateProgressBar() {
+    const exes    = workoutData[currentTabKey].exercises;
+    const checked = exes.filter(ex => localStorage.getItem('check_'+ex.id) === 'true').length;
+    const pct     = exes.length > 0 ? Math.round((checked / exes.length) * 100) : 0;
+    document.getElementById('summary-text').innerText = `${checked} de ${exes.length} concluídos (${pct}%)`;
+    document.getElementById('summary-bar-fill').style.width = pct + '%';
+}
 
-    function checkAutoReset() {
-        const last = localStorage.getItem('app_last_active');
-        if (last && (Date.now() - parseInt(last)) > (12 * 60 * 60 * 1000)) {
-            Object.keys(workoutData).forEach(k => workoutData[k].exercises.forEach(ex => localStorage.setItem('check_'+ex.id, 'false')));
-        }
+function saveWeight(id, val) {
+    localStorage.setItem('weight_'+id, val);
+    const num = parseFloat(val.replace(',','.').replace(/[^0-9.]/g,''));
+    if (!isNaN(num)) {
+        const pr = parseFloat(localStorage.getItem('pr_'+id)) || 0;
+        if (num > pr) localStorage.setItem('pr_'+id, num);
     }
+    renderAll();
+}
 
-    // =========================================================
-    // Swipe para trocar de aba no mobile
-    // - Só ativo em telas < 1024px
-    // - Threshold: 50px horizontal com menos de 120px vertical
-    //   (evita conflito com scroll normal da página)
-    // - Feedback visual: o conteúdo desliza levemente na direção
-    //   do swipe antes de trocar, indicando a navegação
-    // =========================================================
-    (function initSwipe() {
-        const container = document.getElementById('main-container');
-        let startX = 0, startY = 0, startTime = 0;
+function toggleNote(id) {
+    const textarea  = document.getElementById('note_'+id);
+    const isOpening = !textarea.classList.contains('show');
+    textarea.classList.toggle('show');
+    const card = document.getElementById('card_'+id);
+    if (card) {
+        const display = card.querySelector('.exercise-note-display');
+        if (display) display.style.display = isOpening ? 'none' : '';
+    }
+    if (isOpening) textarea.focus();
+}
 
-        container.addEventListener('touchstart', (e) => {
-            if (window.innerWidth >= 1024) return;
-            startX = e.touches[0].clientX;
-            startY = e.touches[0].clientY;
-            startTime = Date.now();
-        }, { passive: true });
-
-        container.addEventListener('touchend', (e) => {
-            if (window.innerWidth >= 1024) return;
-
-            const dx = e.changedTouches[0].clientX - startX;
-            const dy = e.changedTouches[0].clientY - startY;
-            const dt = Date.now() - startTime;
-
-            // Ignora: movimento muito lento, muito vertical, ou muito curto
-            if (dt > 400) return;
-            if (Math.abs(dy) > 120) return;
-            if (Math.abs(dx) < 50) return;
-
-            const keys = Object.keys(workoutData);
-            const currentIndex = keys.indexOf(currentTabKey);
-
-            // Swipe para esquerda → próxima aba; direita → anterior
-            let nextIndex;
-            if (dx < 0) {
-                nextIndex = (currentIndex + 1) % keys.length;
-            } else {
-                nextIndex = (currentIndex - 1 + keys.length) % keys.length;
+function saveNote(id, val) {
+    localStorage.setItem('note_'+id, val);
+    const card = document.getElementById('card_'+id);
+    if (card) {
+        const textarea = card.querySelector('.exercise-note');
+        let display    = card.querySelector('.exercise-note-display');
+        if (val.trim()) {
+            if (!display) {
+                display = document.createElement('div');
+                display.className = 'exercise-note-display';
+                display.onclick   = () => toggleNote(id);
+                textarea.parentNode.insertBefore(display, textarea);
             }
+            display.innerHTML     = val.replace(/\n/g,'<br>');
+            display.style.display = '';
+        } else if (display) { display.remove(); }
+    }
+}
 
-            if (nextIndex === currentIndex) return;
+function saveData() { localStorage.setItem('app_workout_data', JSON.stringify(workoutData)); }
 
-            // Feedback visual: desliza o conteúdo brevemente
-            const translateDir = dx < 0 ? '-40px' : '40px';
-            container.style.transition = 'opacity 0.15s ease, transform 0.15s ease';
-            container.style.opacity = '0';
-            container.style.transform = `translateX(${translateDir})`;
+// ============================================================
+//  FAB
+// ============================================================
+function toggleFab()    { document.getElementById('fab-menu').classList.toggle('show'); document.getElementById('fab-btn').classList.toggle('active'); }
+function closeFabMobile() { if (window.innerWidth < 1024 && document.getElementById('fab-menu').classList.contains('show')) toggleFab(); }
+function fabEdit() {
+    document.body.classList.toggle('edit-mode');
+    const isEdit = document.body.classList.contains('edit-mode');
+    const text   = isEdit ? `<i class="ph-bold ph-check"></i> Sair Edição` : `<i class="ph-bold ph-gear"></i> Modo Edição`;
+    document.getElementById('edit-fab-text').innerHTML = text;
+    if (document.getElementById('desktop-edit-btn')) document.getElementById('desktop-edit-btn').innerHTML = text;
+    closeFabMobile();
+}
+function fabAdd()   { closeFabMobile(); openExModal('new', null, null); }
+function fabReset() {
+    closeFabMobile();
+    openConfirmModal('Limpar treino de hoje?', 'Todas as marcações do treino atual serão apagadas.', () => {
+        workoutData[currentTabKey].exercises.forEach(ex => localStorage.setItem('check_'+ex.id, 'false'));
+        renderAll();
+    });
+}
 
-            setTimeout(() => {
-                currentTabKey = keys[nextIndex];
-                saveActiveTab(currentTabKey);
-                renderTabs();
-                renderAll();
+function removeEx(key, id) {
+    workoutData[key].exercises = workoutData[key].exercises.filter(ex => ex.id !== id);
+    purgeExerciseData(id);
+    saveData(); renderAll();
+}
 
-                // Reseta posição para o lado oposto e anima entrada
-                const enterDir = dx < 0 ? '40px' : '-40px';
-                container.style.transition = 'none';
-                container.style.opacity = '0';
-                container.style.transform = `translateX(${enterDir})`;
+// ============================================================
+//  TEMA / HISTÓRICO / BACKUP
+// ============================================================
+function toggleTheme() {
+    const next = document.body.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    document.body.setAttribute('data-theme', next);
+    localStorage.setItem('app_theme', next);
+    closeFabMobile();
+}
 
-                requestAnimationFrame(() => {
-                    requestAnimationFrame(() => {
-                        container.style.transition = 'opacity 0.2s ease, transform 0.2s ease';
-                        container.style.opacity = '1';
-                        container.style.transform = 'translateX(0)';
+function openHistory() {
+    const grid  = document.getElementById('heatmap-grid');
+    grid.innerHTML = '';
+    const hist  = JSON.parse(localStorage.getItem('app_history') || '{}');
+    const today = new Date();
+    for (let i = 27; i >= 0; i--) {
+        const d = new Date(); d.setDate(today.getDate() - i);
+        const ds = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+        const sq = document.createElement('div');
+        sq.className    = 'heat-square';
+        sq.style.background = hist[ds] ? 'var(--success)' : 'rgba(0,0,0,0.1)';
+        sq.innerText    = d.getDate();
+        grid.appendChild(sq);
+    }
+    document.getElementById('history-modal').style.display = 'flex';
+    closeFabMobile();
+}
+
+function exportData() {
+    const weights = {};
+    for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (k.startsWith('weight_') || k.startsWith('note_') || k.startsWith('pr_') || k === 'app_history')
+            weights[k] = localStorage.getItem(k);
+    }
+    const dl = document.createElement('a');
+    dl.href     = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify({workoutData, weights}));
+    dl.download = "backup_treino.json";
+    dl.click();
+    closeFabMobile();
+}
+
+function importData(event) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        const d = JSON.parse(e.target.result);
+        if (d.weights)     Object.keys(d.weights).forEach(k => localStorage.setItem(k, d.weights[k]));
+        if (d.workoutData) { workoutData = d.workoutData; saveData(); }
+        location.reload();
+    };
+    reader.readAsText(event.target.files[0]);
+}
+
+// ============================================================
+//  PDF EXPORT
+// ============================================================
+function exportPDF() {
+    closeFabMobile();
+    const hasExercises = Object.values(workoutData).some(t => t.exercises.length > 0);
+    if (!hasExercises) {
+        openConfirmModal('Nenhum exercício cadastrado', 'Adicione pelo menos um exercício antes de exportar sua ficha.', null, true);
+        return;
+    }
+    const { jsPDF } = window.jspdf;
+    const doc    = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    const pageW  = 210, margin = 14, colW = pageW - margin * 2;
+    let y = 20;
+    doc.setProperties({ subject: 'TRAINING_PRO_EXPORT_V1' });
+
+    doc.setFillColor(14, 165, 233);
+    doc.rect(0, 0, pageW, 14, 'F');
+    doc.setTextColor(255,255,255);
+    doc.setFontSize(11); doc.setFont('helvetica','bold');
+    doc.text('FICHA DE TREINO — TRAINING PRO', pageW/2, 9.5, { align:'center' });
+    doc.setFontSize(7); doc.setFont('helvetica','normal');
+    doc.text(`Gerado em: ${new Date().toLocaleDateString('pt-BR')}`, pageW - margin, 9.5, { align:'right' });
+    y = 22;
+
+    Object.keys(workoutData).forEach((key, tabIndex) => {
+        const tab = workoutData[key];
+        if (!tab.exercises.length) return;
+        if (tabIndex > 0 && y > 250) { doc.addPage(); y = 15; }
+
+        doc.setFillColor(30,41,59);
+        doc.roundedRect(margin, y, colW, 9, 2, 2, 'F');
+        doc.setTextColor(56,189,248); doc.setFontSize(9); doc.setFont('helvetica','bold');
+        doc.text(`${abbreviateLabel(tab.label)}  —  ${tab.title.toUpperCase()}`, margin + 4, y + 6);
+        y += 13;
+
+        const cols = { name: margin, reps: margin+90, time: margin+130, weight: margin+160 };
+        doc.setFillColor(248,250,252);
+        doc.rect(margin, y, colW, 7, 'F');
+        doc.setTextColor(100,116,139); doc.setFontSize(7.5); doc.setFont('helvetica','bold');
+        doc.text('EXERCÍCIO', cols.name+2, y+5);
+        doc.text('SÉRIES',    cols.reps,   y+5);
+        doc.text('PAUSA',     cols.time,   y+5);
+        doc.text('PESO REG.', cols.weight, y+5);
+        y += 7;
+
+        tab.exercises.forEach((ex, i) => {
+            if (y > 272) { doc.addPage(); y = 15; }
+            const rowH = 8;
+            const bg   = i % 2 === 0 ? [255,255,255] : [241,245,249];
+            doc.setFillColor(...bg); doc.rect(margin, y, colW, rowH, 'F');
+            doc.setTextColor(30,41,59); doc.setFontSize(8); doc.setFont('helvetica','normal');
+            const nameStr = ex.name.length > 52 ? ex.name.substring(0,52) + '…' : ex.name;
+            doc.text(nameStr, cols.name+2, y+5.5);
+            doc.text(ex.reps, cols.reps,   y+5.5);
+            doc.text(ex.time, cols.time,   y+5.5);
+            doc.text(localStorage.getItem('weight_'+ex.id) || '—', cols.weight, y+5.5);
+            doc.setDrawColor(226,232,240);
+            doc.line(margin, y+rowH, margin+colW, y+rowH);
+            y += rowH;
+        });
+        y += 8;
+    });
+
+    const totalPages = doc.getNumberOfPages();
+    for (let p = 1; p <= totalPages; p++) {
+        doc.setPage(p);
+        doc.setFontSize(7); doc.setTextColor(148,163,184); doc.setFont('helvetica','normal');
+        doc.text(`Training Pro  •  Página ${p} de ${totalPages}`, pageW/2, 292, { align:'center' });
+    }
+    doc.save('ficha_treino.pdf');
+}
+
+// ============================================================
+//  PDF IMPORT
+// ============================================================
+async function importPDF(event) {
+    const file = event.target.files[0];
+    event.target.value = '';
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) {
+        openConfirmModal('Arquivo muito grande', 'O PDF deve ter no máximo 2 MB. Tente exportar novamente pelo Training Pro.', null, true); return;
+    }
+    openConfirmModal('Importar Ficha PDF?', 'Os treinos atuais serão substituídos pelos dados do arquivo. Esta ação não pode ser desfeita.', async () => {
+        try {
+            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+            const pdf = await pdfjsLib.getDocument({ data: await file.arrayBuffer() }).promise;
+            let fullText = '';
+            for (let p = 1; p <= pdf.numPages; p++) {
+                const page    = await pdf.getPage(p);
+                const content = await page.getTextContent();
+                fullText += content.items.map(i => i.str).join(' ') + '\n';
+            }
+            if (!fullText.includes('TRAINING PRO') && !fullText.includes('FICHA DE TREINO')) {
+                openConfirmModal('PDF não reconhecido', 'Este PDF não segue o formato do Training Pro e não pôde ser importado.', null, true); return;
+            }
+            const parsed = {};
+            const lines  = fullText.split('\n').map(l => l.trim()).filter(Boolean);
+            let currentKey = null;
+            const tableHeaderRe = /^EXERCÍCIO\s+SÉRIES/i;
+            const footerRe      = /Training Pro\s*•\s*Página/i;
+            const dateRe        = /^Gerado em:/i;
+            const tabHeaderRe   = /^(.+?)\s+[—\-–]\s+(.+)$/;
+
+            lines.forEach(line => {
+                if (tableHeaderRe.test(line) || footerRe.test(line) || dateRe.test(line)) return;
+                if (line === 'FICHA DE TREINO — TRAINING PRO') return;
+                const tabMatch = line.match(tabHeaderRe);
+                if (tabMatch) {
+                    const label = tabMatch[1].trim();
+                    const title = tabMatch[2].trim();
+                    currentKey  = 'treino_' + label.replace(/\s+/g,'_');
+                    parsed[currentKey] = { label, title: title.charAt(0).toUpperCase() + title.slice(1).toLowerCase(), exercises: [] };
+                    return;
+                }
+                if (!currentKey) return;
+                const exMatch = line.match(/^(.+?)\s{2,}(\S.*?\S|\S)\s{2,}(\S+)\s{2,}(\S+)\s*$/);
+                if (exMatch) {
+                    parsed[currentKey].exercises.push({
+                        id:   'ex_' + Date.now() + '_' + Math.random().toString(36).substr(2,5),
+                        name: exMatch[1].trim().replace(/…$/,''),
+                        reps: exMatch[2].trim(),
+                        time: exMatch[3].trim()
                     });
-                });
-            }, 150);
-        }, { passive: true });
-    })();
-    // =========================================================
+                }
+            });
+            const tabCount = Object.keys(parsed).length;
+            if (!tabCount) {
+                openConfirmModal('Nenhum dado encontrado', 'Não foi possível extrair exercícios deste PDF.', null, true); return;
+            }
+            workoutData   = parsed;
+            currentTabKey = Object.keys(parsed)[0];
+            saveData(); saveActiveTab(currentTabKey); renderTabs(); renderAll();
+            openConfirmModal('Importação concluída ✓', `${tabCount} aba(s) importada(s) com sucesso.`, null, true);
+        } catch (err) {
+            openConfirmModal('Erro ao ler o arquivo', 'Não foi possível processar o PDF. Verifique se o arquivo não está corrompido.', null, true);
+        }
+    });
+}
+
+// ============================================================
+//  TIMER
+// ============================================================
+let timerInterval;
+function startTimer(t) {
+    if (t === 'Nec.') return;
+    stopTimer();
+    let totalSec = t.includes('m') ? parseInt(t.split('m')[0])*60 + (parseInt(t.split('m')[1])||0) : parseInt(t);
+    let sec      = totalSec;
+    const widget = document.getElementById('timer-widget');
+    const text   = document.getElementById('timer-text');
+    const ring   = document.getElementById('progress-ring');
+    const C      = 283;
+    widget.style.display = 'flex';
+    ring.style.strokeDashoffset = 0;
+    ring.style.stroke = 'var(--primary)';
+    text.innerText = sec;
+    timerInterval = setInterval(() => {
+        sec--;
+        text.innerText = sec;
+        ring.style.strokeDashoffset = C - (sec / totalSec) * C;
+        if      (sec <= totalSec * 0.2) ring.style.stroke = 'var(--danger)';
+        else if (sec <= totalSec * 0.5) ring.style.stroke = 'var(--gold)';
+        if (sec <= 0) {
+            clearInterval(timerInterval);
+            text.innerText = "OK";
+            ring.style.stroke = 'var(--success)';
+            if (navigator.vibrate) navigator.vibrate([200,100,200]);
+            setTimeout(stopTimer, 2500);
+        }
+    }, 1000);
+}
+function stopTimer() { clearInterval(timerInterval); document.getElementById('timer-widget').style.display = 'none'; }
+
+// ============================================================
+//  MODAIS
+// ============================================================
+let _inputCallback = null;
+function openInputModal(title, placeholder, defaultValue, callback) {
+    _inputCallback = callback;
+    document.getElementById('input-modal-title').innerText = title;
+    const field = document.getElementById('input-modal-field');
+    field.placeholder = placeholder; field.value = defaultValue || '';
+    document.getElementById('input-modal').style.display = 'flex';
+    setTimeout(() => { field.focus(); field.select(); }, 80);
+    document.getElementById('input-modal-confirm').onclick = () => {
+        const val = field.value.trim();
+        if (val && _inputCallback) _inputCallback(val);
+        closeInputModal();
+    };
+    field.onkeydown = (e) => { if (e.key === 'Enter') document.getElementById('input-modal-confirm').click(); if (e.key === 'Escape') closeInputModal(); };
+}
+function closeInputModal() { document.getElementById('input-modal').style.display = 'none'; _inputCallback = null; }
+
+let _confirmCallback = null;
+function openConfirmModal(title, msg, callback, infoOnly = false) {
+    _confirmCallback = callback;
+    document.getElementById('confirm-modal-title').innerText = title;
+    document.getElementById('confirm-modal-msg').innerText   = msg;
+    const okBtn = document.getElementById('confirm-modal-ok');
+    if (infoOnly) { okBtn.style.display = 'none'; }
+    else { okBtn.style.display = ''; okBtn.onclick = () => { if (_confirmCallback) _confirmCallback(); closeConfirmModal(); }; }
+    document.getElementById('confirm-modal').style.display = 'flex';
+}
+function closeConfirmModal() { document.getElementById('confirm-modal').style.display = 'none'; _confirmCallback = null; }
+
+let _exModalMode = null, _exModalKey = null, _exModalId = null;
+function openExModal(mode, key, ex) {
+    _exModalMode = mode; _exModalKey = key || currentTabKey; _exModalId = ex ? ex.id : null;
+    document.getElementById('exercise-modal-title').innerText = mode === 'edit' ? 'Editar Exercício' : 'Novo Exercício';
+    document.getElementById('ex-modal-name').value = ex ? ex.name  : '';
+    document.getElementById('ex-modal-reps').value = ex ? ex.reps  : '3x12';
+    document.getElementById('ex-modal-time').value = ex ? ex.time  : '1m30';
+    document.getElementById('ex-modal-link').value = ex ? (ex.link||'') : '';
+    document.getElementById('exercise-modal').style.display = 'flex';
+    setTimeout(() => document.getElementById('ex-modal-name').focus(), 80);
+    document.getElementById('ex-modal-confirm').onclick = saveExModal;
+    document.getElementById('ex-modal-name').onkeydown  = (e) => { if (e.key === 'Enter') document.getElementById('ex-modal-confirm').click(); };
+}
+function closeExModal() { document.getElementById('exercise-modal').style.display = 'none'; }
+function saveExModal() {
+    const name = document.getElementById('ex-modal-name').value.trim();
+    if (!name) { document.getElementById('ex-modal-name').focus(); return; }
+    const reps = document.getElementById('ex-modal-reps').value.trim() || '3x12';
+    const time = document.getElementById('ex-modal-time').value.trim() || '1m30';
+    const link = document.getElementById('ex-modal-link').value.trim();
+    if (_exModalMode === 'new') {
+        workoutData[_exModalKey].exercises.push({ id: 'ex_'+Date.now(), name, reps, time, link });
+    } else {
+        const ex = workoutData[_exModalKey].exercises.find(e => e.id === _exModalId);
+        if (ex) { ex.name = name; ex.reps = reps; ex.time = time; ex.link = link; }
+    }
+    saveData(); renderAll(); closeExModal();
+}
+
+document.getElementById('input-modal').addEventListener('click',    function(e){ if(e.target===this) closeInputModal(); });
+document.getElementById('confirm-modal').addEventListener('click',  function(e){ if(e.target===this) closeConfirmModal(); });
+document.getElementById('exercise-modal').addEventListener('click', function(e){ if(e.target===this) closeExModal(); });
+
+// ============================================================
+//  AUTO-RESET (12h sem atividade)
+// ============================================================
+function checkAutoReset() {
+    const last = localStorage.getItem('app_last_active');
+    if (last && (Date.now() - parseInt(last)) > 12*60*60*1000) {
+        Object.keys(workoutData).forEach(k => workoutData[k].exercises.forEach(ex => localStorage.setItem('check_'+ex.id, 'false')));
+    }
+}
+
+// ============================================================
+//  SWIPE para trocar de aba (mobile)
+// ============================================================
+(function initSwipe() {
+    const container = document.getElementById('main-container');
+    let startX = 0, startY = 0, startTime = 0;
+    container.addEventListener('touchstart', (e) => {
+        if (window.innerWidth >= 1024) return;
+        startX = e.touches[0].clientX; startY = e.touches[0].clientY; startTime = Date.now();
+    }, { passive: true });
+    container.addEventListener('touchend', (e) => {
+        if (window.innerWidth >= 1024) return;
+        const dx = e.changedTouches[0].clientX - startX;
+        const dy = e.changedTouches[0].clientY - startY;
+        const dt = Date.now() - startTime;
+        if (dt > 400 || Math.abs(dy) > 120 || Math.abs(dx) < 50) return;
+        const keys        = Object.keys(workoutData);
+        const currentIdx  = keys.indexOf(currentTabKey);
+        const nextIdx     = dx < 0
+            ? (currentIdx + 1) % keys.length
+            : (currentIdx - 1 + keys.length) % keys.length;
+        if (nextIdx === currentIdx) return;
+        const dir = dx < 0 ? '-40px' : '40px';
+        container.style.transition = 'opacity 0.15s ease, transform 0.15s ease';
+        container.style.opacity    = '0';
+        container.style.transform  = `translateX(${dir})`;
+        setTimeout(() => {
+            currentTabKey = keys[nextIdx];
+            saveActiveTab(currentTabKey);
+            renderTabs(); renderAll();
+            const enter = dx < 0 ? '40px' : '-40px';
+            container.style.transition = 'none';
+            container.style.opacity    = '0';
+            container.style.transform  = `translateX(${enter})`;
+            requestAnimationFrame(() => requestAnimationFrame(() => {
+                container.style.transition = 'opacity 0.2s ease, transform 0.2s ease';
+                container.style.opacity    = '1';
+                container.style.transform  = 'translateX(0)';
+            }));
+        }, 150);
+    }, { passive: true });
+})();
 </script>
 </body>
 </html>
