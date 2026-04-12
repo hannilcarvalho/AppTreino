@@ -1,1404 +1,1724 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Training Pro</title>
-    <meta name="mobile-web-app-capable" content="yes">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
-    <script src="https://unpkg.com/@phosphor-icons/web"></script>
-    <!-- QR Code -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-    <!-- jsPDF: exportar PDF -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <!-- PDF.js: importar PDF -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-    <style>
-        :root {
-            --bg-main: radial-gradient(circle at top right, #1e293b, #0f172a);
-            --header-bg: rgba(15, 23, 42, 0.9);
-            --card-bg: rgba(30, 41, 59, 0.6);
-            --text-main: #f8fafc;
-            --text-dim: #94a3b8;
-            --border: rgba(255, 255, 255, 0.08);
-            --primary: #38bdf8;
-            --accent: #f472b6;
-            --success: #4ade80;
-            --danger: #ef4444;
-            --gold: #fbbf24;
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Training Pro</title>
+<meta name="mobile-web-app-capable" content="yes">
+<!-- ✅ OTIMIZAÇÃO 2 & 3: preconnect elimina latência DNS+TLS das fontes -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Syne:wght@800;900&display=swap" rel="stylesheet">
 
-        [data-theme="light"] {
-            --bg-main: radial-gradient(circle at top right, #f1f5f9, #e2e8f0);
-            --header-bg: rgba(255, 255, 255, 0.95);
-            --card-bg: rgba(255, 255, 255, 0.8);
-            --text-main: #1e293b;
-            --text-dim: #64748b;
-            --border: rgba(0, 0, 0, 0.1);
-            --primary: #0284c7;
-            --accent: #db2777;
-            --success: #16a34a;
-            --danger: #dc2626;
-        }
+<!-- ✅ OTIMIZAÇÃO 2: defer — não bloqueia o parser HTML durante o carregamento -->
+<!-- Phosphor Icons: ícones aparecem após o HTML principal já estar renderizado -->
+<script src="https://unpkg.com/@phosphor-icons/web" defer></script>
+<!-- QRCode: só é usado ao abrir o modal de sincronização -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" defer></script>
+<!-- ✅ OTIMIZAÇÃO 1: jsPDF (~500 KB) e PDF.js (~1.2 MB) REMOVIDOS daqui.
+     Serão carregados via lazy load apenas quando o usuário acionar as funções
+     de exportar ou importar PDF — economizando ~1.7 MB no carregamento inicial. -->
+<style>
+:root{
+  --bg:#060c18;--surface:rgba(12,20,40,0.82);--surface2:rgba(16,26,50,0.94);
+  --border:rgba(255,255,255,0.07);--border-hi:rgba(56,189,248,0.28);
+  --txt:#e8f0ff;--txt-dim:#5d7499;
+  --primary:#38bdf8;--primary-d:rgba(56,189,248,0.13);
+  --accent:#f472b6;--success:#34d399;--danger:#f87171;--gold:#fbbf24;
+  --r:20px;--r-sm:12px;
+  /* Accent personalizado — sobrescrito via JS */
+  --custom-primary:var(--primary);
+}
+[data-theme="light"]{
+  --bg:#eef2fb;--surface:rgba(255,255,255,0.84);--surface2:rgba(246,249,255,0.97);
+  --border:rgba(0,0,0,0.07);--border-hi:rgba(2,132,199,0.25);
+  --txt:#0c1629;--txt-dim:#5a6d8a;--primary:#0284c7;--primary-d:rgba(2,132,199,0.1);
+  --accent:#db2777;--success:#059669;--danger:#dc2626;
+}
+/* Tema automático — segue o sistema quando ativo */
+@media(prefers-color-scheme:light){
+  [data-theme="auto"]{
+    --bg:#eef2fb;--surface:rgba(255,255,255,0.84);--surface2:rgba(246,249,255,0.97);
+    --border:rgba(0,0,0,0.07);--border-hi:rgba(2,132,199,0.25);
+    --txt:#0c1629;--txt-dim:#5a6d8a;--primary:#0284c7;--primary-d:rgba(2,132,199,0.1);
+    --accent:#db2777;--success:#059669;--danger:#dc2626;
+  }
+}
 
-        @keyframes tabFadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to   { opacity: 1; transform: translateY(0); }
-        }
-        .tab-content-animate { animation: tabFadeIn 0.3s ease-out forwards; }
+/* ── KEYFRAMES ── */
+@keyframes fadeUp    {from{opacity:0;transform:translateY(26px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeIn    {from{opacity:0}to{opacity:1}}
+@keyframes scaleIn   {from{opacity:0;transform:scale(.86)}to{opacity:1;transform:scale(1)}}
+@keyframes shimmer   {0%{background-position:-200% center}100%{background-position:200% center}}
+@keyframes float     {0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
+@keyframes checkSpring{0%{transform:scale(0) rotate(-15deg)}55%{transform:scale(1.25) rotate(6deg)}80%{transform:scale(.9) rotate(-2deg)}100%{transform:scale(1) rotate(0deg)}}
+@keyframes prGlow    {0%,100%{box-shadow:0 0 10px rgba(251,191,36,.3)}50%{box-shadow:0 0 28px rgba(251,191,36,.75)}}
+@keyframes aurora    {0%{transform:translateX(-50%) rotate(0deg) scale(1)}33%{transform:translateX(-30%) rotate(130deg) scale(1.25)}66%{transform:translateX(-70%) rotate(250deg) scale(.85)}100%{transform:translateX(-50%) rotate(360deg) scale(1)}}
+@keyframes modalIn   {from{opacity:0;transform:scale(.88) translateY(20px)}to{opacity:1;transform:scale(1) translateY(0)}}
+@keyframes syncPulse {0%,100%{box-shadow:0 0 0 0 rgba(56,189,248,.38)}50%{box-shadow:0 0 0 12px rgba(56,189,248,0)}}
+@keyframes scanLine  {0%{top:0}100%{top:100%}}
+@keyframes successPop{0%{transform:scale(.4);opacity:0}70%{transform:scale(1.15)}100%{transform:scale(1);opacity:1}}
+@keyframes toastIn   {from{opacity:0;transform:translateX(-50%) translateY(14px) scale(.93)}to{opacity:1;transform:translateX(-50%) translateY(0) scale(1)}}
+@keyframes confettiPop{0%{opacity:1;transform:scale(0) rotate(0deg) translateY(0)}60%{opacity:1;transform:scale(1.4) rotate(200deg) translateY(-34px)}100%{opacity:0;transform:scale(.5) rotate(400deg) translateY(-60px)}}
+@keyframes gradientShift{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
+@keyframes barStripe {0%{background-position:0 0}100%{background-position:40px 0}}
+@keyframes ripple    {0%{transform:scale(0);opacity:.5}100%{transform:scale(4);opacity:0}}
+@keyframes headerIn  {from{opacity:0;transform:translateY(-100%)}to{opacity:1;transform:translateY(0)}}
+@keyframes cardIn    {from{opacity:0;transform:translateY(22px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
 
-        /* ===== SYNC MODAL ===== */
-        @keyframes syncPulse {
-            0%, 100% { box-shadow: 0 0 0 0 rgba(56,189,248,0.4); }
-            50%       { box-shadow: 0 0 0 12px rgba(56,189,248,0); }
-        }
-        @keyframes scanLine {
-            0%   { top: 0; }
-            100% { top: 100%; }
-        }
-        @keyframes successPop {
-            0%   { transform: scale(0.5); opacity: 0; }
-            70%  { transform: scale(1.1); }
-            100% { transform: scale(1);   opacity: 1; }
-        }
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
 
-        .sync-modal-overlay {
-            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.85); z-index: 4000;
-            align-items: center; justify-content: center; backdrop-filter: blur(8px);
-        }
-        .sync-modal-box {
-            background: var(--card-bg); border: 1px solid var(--border);
-            border-radius: 28px; padding: 32px 28px; max-width: 92%; width: 420px;
-            box-shadow: 0 30px 80px rgba(0,0,0,0.6);
-            animation: modalIn 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-            max-height: 90vh; overflow-y: auto;
-        }
-        .sync-tabs {
-            display: flex; background: rgba(0,0,0,0.2); border-radius: 14px;
-            padding: 4px; gap: 4px; margin-bottom: 24px;
-        }
-        .sync-tab {
-            flex: 1; padding: 10px; border: none; border-radius: 10px;
-            font-weight: 800; font-size: 0.82rem; cursor: pointer;
-            background: transparent; color: var(--text-dim); transition: all 0.2s;
-            font-family: 'Inter', sans-serif; display: flex; align-items: center;
-            justify-content: center; gap: 6px; letter-spacing: 0.3px;
-        }
-        .sync-tab.active { background: var(--primary); color: white; box-shadow: 0 4px 15px rgba(56,189,248,0.35); }
-        .sync-panel { display: none; }
-        .sync-panel.active { display: block; }
+*,*::before,*::after{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  font-family:'Space Grotesk',sans-serif;
+  background:var(--bg);color:var(--txt);
+  margin:0;padding-bottom:130px;min-height:100vh;
+  overflow-x:hidden;transition:background .45s,color .45s;
+}
+body::before{
+  content:'';position:fixed;width:900px;height:900px;border-radius:50%;
+  pointer-events:none;z-index:0;top:-300px;left:50%;
+  background:radial-gradient(ellipse,rgba(56,189,248,.07) 0%,rgba(244,114,182,.04) 50%,transparent 70%);
+  animation:aurora 22s ease-in-out infinite;
+}
 
-        .qr-wrapper {
-            background: white; border-radius: 20px; padding: 18px;
-            display: flex; align-items: center; justify-content: center;
-            margin: 16px auto; width: fit-content; position: relative; overflow: hidden;
-        }
-        .qr-scan-line {
-            position: absolute; left: 0; right: 0; height: 2px;
-            background: linear-gradient(90deg, transparent, var(--primary), transparent);
-            animation: scanLine 2s linear infinite; opacity: 0.8;
-        }
+/* ── HEADER ── */
+header{
+  position:sticky;top:0;z-index:1100;width:100%;padding:22px 0;text-align:center;
+  background:rgba(6,12,24,0.72);backdrop-filter:blur(22px) saturate(180%);
+  border-bottom:1px solid var(--border);
+  animation:headerIn .55s cubic-bezier(.22,1,.36,1) both;
+}
+[data-theme="light"] header{background:rgba(238,242,251,0.78)}
+header h1{
+  margin:0;font-family:'Syne',sans-serif;font-size:1.05rem;font-weight:900;
+  letter-spacing:3px;text-transform:uppercase;
+  background:linear-gradient(135deg,var(--primary),var(--accent),var(--primary));
+  background-size:300% 300%;-webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  background-clip:text;animation:gradientShift 5s ease infinite;
+}
 
-        .link-box {
-            background: rgba(0,0,0,0.2); border: 1px solid var(--border);
-            border-radius: 14px; padding: 14px; font-family: monospace;
-            font-size: 0.72rem; color: var(--text-dim); word-break: break-all;
-            line-height: 1.5; max-height: 90px; overflow-y: auto;
-            cursor: pointer; transition: 0.2s; position: relative;
-        }
-        .link-box:hover { border-color: var(--primary); }
-        .copy-badge {
-            position: absolute; top: 8px; right: 8px;
-            background: var(--primary); color: white; font-size: 0.65rem;
-            font-weight: 800; padding: 3px 8px; border-radius: 8px; font-family: 'Inter', sans-serif;
-        }
-        .import-paste-area {
-            width: 100%; box-sizing: border-box;
-            background: rgba(0,0,0,0.15); border: 1.5px dashed var(--border);
-            border-radius: 14px; color: var(--text-main); padding: 14px;
-            font-family: monospace; font-size: 0.75rem; resize: vertical;
-            min-height: 90px; outline: none; transition: 0.2s;
-        }
-        .import-paste-area:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(56,189,248,0.15); }
-        .sync-info-row {
-            display: flex; align-items: center; gap: 10px;
-            background: rgba(56,189,248,0.08); border: 1px solid rgba(56,189,248,0.2);
-            border-radius: 12px; padding: 12px; margin-bottom: 16px;
-            font-size: 0.8rem; color: var(--text-dim);
-        }
-        .sync-info-row i { color: var(--primary); font-size: 1.2rem; flex-shrink: 0; }
-        .sync-option {
-            display: flex; align-items: center; gap: 12px;
-            padding: 12px; border-radius: 12px; cursor: pointer;
-            border: 1px solid var(--border); margin-bottom: 8px; transition: 0.2s;
-        }
-        .sync-option:hover { border-color: var(--primary); background: rgba(56,189,248,0.05); }
-        .sync-option input[type=checkbox] { accent-color: var(--primary); width: 16px; height: 16px; }
-        .sync-option-label { font-size: 0.85rem; font-weight: 700; }
-        .sync-option-desc { font-size: 0.72rem; color: var(--text-dim); margin-top: 2px; }
-        .success-icon {
-            display: none; text-align: center; padding: 20px 0;
-            animation: successPop 0.4s cubic-bezier(0.34,1.56,0.64,1) forwards;
-        }
-        .success-icon i { font-size: 4rem; color: var(--success); }
-        /* ======================== */
+/* ── TABS ── */
+#tabs-wrapper{width:100%;max-width:500px;margin:0 auto;border-bottom:1px solid var(--border);position:relative;z-index:1}
+.tabs-container{display:flex;background:rgba(0,0,0,0.04);overflow-x:auto;scrollbar-width:none}
+.tabs-container::-webkit-scrollbar{display:none}
+.tab-btn-wrapper{position:relative;flex:1;display:flex}
+.tab-btn{
+  background:none;border:none;color:var(--txt-dim);
+  font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:1.05rem;
+  padding:18px 14px;width:100%;cursor:pointer;white-space:nowrap;
+  position:relative;overflow:hidden;transition:color .25s;
+}
+.tab-btn::after{
+  content:'';position:absolute;bottom:0;left:50%;width:0;height:3px;
+  background:linear-gradient(90deg,var(--primary),var(--accent));border-radius:3px 3px 0 0;
+  transition:width .3s cubic-bezier(.22,1,.36,1),left .3s cubic-bezier(.22,1,.36,1);
+}
+.tab-btn.active{color:var(--primary)}
+.tab-btn.active::after{width:100%;left:0}
+.tab-btn .ripple-el{position:absolute;border-radius:50%;background:rgba(56,189,248,.15);animation:ripple .5s linear;pointer-events:none}
+.btn-tab-manage{position:absolute;top:2px;right:2px;background:var(--danger);color:white;border:none;border-radius:50%;width:18px;height:18px;font-size:10px;cursor:pointer;display:none;z-index:5;font-weight:bold;align-items:center;justify-content:center;transition:transform .2s}
+.btn-tab-rename{position:absolute;top:2px;left:2px;background:var(--primary);color:white;border:none;border-radius:50%;width:18px;height:18px;font-size:9px;cursor:pointer;display:none;z-index:5;font-weight:bold;align-items:center;justify-content:center}
+.edit-mode .btn-tab-manage,.edit-mode .btn-tab-rename{display:flex}
+.btn-tab-manage:hover{transform:scale(1.2) rotate(90deg)}
+.tab-controls{display:flex;justify-content:center;padding:10px;background:rgba(0,0,0,0.05)}
+.btn-add-tab{background:var(--surface);border:1px dashed var(--border-hi);color:var(--primary);padding:6px 18px;border-radius:40px;font-weight:700;cursor:pointer;font-size:.8rem;display:flex;align-items:center;gap:6px;transition:all .25s;font-family:'Space Grotesk',sans-serif}
+.btn-add-tab:hover{background:var(--primary-d);transform:scale(1.04)}
+.tab-suggested-dot{position:absolute;bottom:5px;left:50%;transform:translateX(-50%);width:5px;height:5px;border-radius:50%;background:var(--gold);display:none;box-shadow:0 0 8px var(--gold);animation:float 2s ease-in-out infinite}
+.tab-btn-wrapper.suggested .tab-suggested-dot{display:block}
 
-        body {
-            font-family: 'Inter', sans-serif;
-            background: var(--bg-main);
-            color: var(--text-main);
-            margin: 0; padding-bottom: 120px;
-            min-height: 100vh;
-            transition: background 0.3s ease;
-        }
+/* ── SUMMARY ── */
+.summary-card{
+  background:var(--surface);backdrop-filter:blur(18px) saturate(160%);
+  border-radius:var(--r);padding:20px 22px;margin:18px auto 8px;
+  max-width:480px;width:calc(100% - 36px);border:1px solid var(--border);
+  box-sizing:border-box;text-align:center;
+  animation:fadeUp .5s .1s cubic-bezier(.22,1,.36,1) both;position:relative;z-index:1;
+}
+.summary-text{font-size:.85rem;font-weight:700;margin-bottom:12px;color:var(--txt-dim)}
+.summary-bar-bg{background:rgba(0,0,0,0.12);border-radius:40px;height:8px;overflow:hidden;position:relative}
+.summary-bar-fill{
+  height:100%;width:0%;
+  background:linear-gradient(90deg,var(--success),var(--primary),var(--success));
+  background-size:200% 100%;border-radius:40px;
+  transition:width .7s cubic-bezier(.34,1.56,.64,1);
+  animation:gradientShift 3s linear infinite;position:relative;
+}
+.summary-bar-fill::after{
+  content:'';position:absolute;inset:0;
+  background:repeating-linear-gradient(60deg,transparent,transparent 6px,rgba(255,255,255,.1) 6px,rgba(255,255,255,.1) 12px);
+  background-size:40px 100%;animation:barStripe 1.2s linear infinite;
+}
 
-        header {
-            width: 100%; padding: 25px 0; text-align: center;
-            background: var(--header-bg); backdrop-filter: blur(15px);
-            border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 1100;
-        }
-        header h1 { margin: 0; font-size: 1rem; font-weight: 800; letter-spacing: 2px; color: var(--primary); text-transform: uppercase; }
+/* ── CONTAINER ── */
+.container{width:100%;max-width:480px;padding:0 18px 20px;box-sizing:border-box;margin:0 auto;position:relative;z-index:1}
+h2{font-family:'Syne',sans-serif;font-size:.72rem;color:var(--txt-dim);text-transform:uppercase;letter-spacing:2px;margin:24px 0 14px;display:flex;align-items:center;justify-content:space-between}
 
-        #tabs-wrapper { width: 100%; max-width: 500px; margin: 0 auto; border-bottom: 1px solid var(--border); }
-        .tabs-container { display: flex; background: rgba(0,0,0,0.05); overflow-x: auto; }
-        .tab-btn-wrapper { position: relative; flex: 1; display: flex; }
-        .tab-btn { background: none; border: none; color: var(--text-dim); font-weight: 800; font-size: 1.1rem; padding: 18px; width: 100%; transition: 0.2s; cursor: pointer; white-space: nowrap; }
-        .tab-btn.active { color: var(--primary); box-shadow: inset 0 -3px 0 var(--primary); }
-        .btn-tab-manage {
-            position: absolute; top: 2px; right: 2px; background: var(--danger); color: white;
-            border: none; border-radius: 50%; width: 18px; height: 18px; font-size: 10px;
-            cursor: pointer; display: none; z-index: 5; font-weight: bold; align-items: center; justify-content: center;
-        }
-        .btn-tab-rename {
-            position: absolute; top: 2px; left: 2px; background: var(--primary); color: white;
-            border: none; border-radius: 50%; width: 18px; height: 18px; font-size: 9px;
-            cursor: pointer; display: none; z-index: 5; font-weight: bold; align-items: center; justify-content: center;
-        }
-        .edit-mode .btn-tab-manage,
-        .edit-mode .btn-tab-rename { display: flex; }
-        .tab-controls { display: flex; justify-content: center; padding: 10px; background: rgba(0,0,0,0.1); }
-        .btn-add-tab { background: var(--card-bg); border: 1px dashed var(--primary); color: var(--primary); padding: 5px 15px; border-radius: 10px; font-weight: 800; cursor: pointer; font-size: 0.8rem; display: flex; align-items: center; gap: 5px; }
+/* ── EXERCISE CARDS ── */
+.exercise-card{
+  background:var(--surface);backdrop-filter:blur(16px) saturate(160%);
+  border-radius:24px;padding:22px;margin-bottom:16px;
+  border:1px solid var(--border);border-left:4px solid var(--primary);
+  display:flex;align-items:flex-start;gap:15px;position:relative;
+  transition:transform .28s cubic-bezier(.22,1,.36,1),box-shadow .28s,border-color .28s,opacity .35s,filter .35s;
+  opacity:0;animation:cardIn .45s cubic-bezier(.22,1,.36,1) forwards;
+  /* ✅ OPT 4: contain:layout paint isola recálculo de layout e paint por card
+     sem clip de overflow — diferente de contain:content, não corta filhos
+     com posição negativa (botões de editar/excluir). */
+  contain:layout paint style;
+  overflow:visible;
+}
+/* ✅ OPT 4: will-change ativado só no hover. */
+.exercise-card:hover{will-change:transform}
+.exercise-card::before{content:'';position:absolute;inset:0;border-radius:inherit;pointer-events:none;background:linear-gradient(135deg,rgba(255,255,255,.04) 0%,transparent 60%)}
+.exercise-card:hover{transform:translateY(-3px) scale(1.008);box-shadow:0 16px 48px rgba(0,0,0,.32),0 0 0 1px var(--border-hi)}
+.exercise-card .shine{
+  position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+  background:linear-gradient(105deg,transparent 40%,rgba(255,255,255,.06) 50%,transparent 60%);
+  opacity:0;transition:opacity .3s;
+  /* Shine clipada pelo border-radius sem precisar de overflow:hidden no pai */
+  overflow:hidden;
+}
+.exercise-card:hover .shine{opacity:1;animation:shimmer .9s ease}
+.exercise-card.completed{opacity:.38;transform:scale(.965);filter:grayscale(.85);border-left-color:var(--success)}
+.exercise-card.completed:hover{transform:scale(.97)}
+/* Botões posicionados no canto superior direito do card com coordenadas positivas
+   para não serem cortados pelo contain. Ficam sobrepostos ao padding do card. */
+.btn-remove{
+  display:none;position:absolute;right:8px;top:8px;
+  background:var(--danger);color:white;border:none;border-radius:50%;
+  width:28px;height:28px;font-weight:bold;cursor:pointer;z-index:10;
+  align-items:center;justify-content:center;
+  transition:transform .2s,box-shadow .2s;
+  box-shadow:0 4px 12px rgba(248,113,113,.4);
+}
+.btn-edit-ex{
+  display:none;position:absolute;right:42px;top:8px;
+  background:var(--primary);color:white;border:none;border-radius:50%;
+  width:28px;height:28px;font-weight:bold;cursor:pointer;z-index:10;font-size:13px;
+  align-items:center;justify-content:center;
+  transition:transform .2s,box-shadow .2s;
+  box-shadow:0 4px 12px rgba(56,189,248,.35);
+}
+.edit-mode .btn-remove,.edit-mode .btn-edit-ex{display:flex}
+.btn-remove:hover{transform:scale(1.2) rotate(90deg)}
+.btn-edit-ex:hover{transform:scale(1.2)}
 
-        /* Indicador de treino sugerido do dia */
-        .tab-btn-wrapper .tab-suggested-dot {
-            position: absolute; bottom: 6px; left: 50%; transform: translateX(-50%);
-            width: 5px; height: 5px; border-radius: 50%;
-            background: var(--gold); display: none;
-            box-shadow: 0 0 6px var(--gold);
-        }
-        .tab-btn-wrapper.suggested .tab-suggested-dot { display: block; }
+/* ── CHECKBOX SPRING ── */
+.custom-checkbox{min-width:32px;height:32px;position:relative;cursor:pointer}
+.custom-checkbox input{opacity:0;width:0;height:0}
+.checkmark{position:absolute;top:0;left:0;height:32px;width:32px;border:2px solid var(--border-hi);border-radius:10px;background:transparent;transition:background .22s,border-color .22s,transform .22s}
+.custom-checkbox:hover .checkmark{border-color:var(--primary);transform:scale(1.08)}
+.custom-checkbox input:checked ~ .checkmark{background:var(--success);border-color:var(--success);animation:checkSpring .42s cubic-bezier(.34,1.56,.64,1) forwards}
+.checkmark::after{content:"";position:absolute;display:none;left:10px;top:5px;width:7px;height:13px;border:solid white;border-width:0 3px 3px 0;transform:rotate(45deg)}
+.custom-checkbox input:checked ~ .checkmark::after{display:block}
 
-        .summary-card {
-            background: var(--card-bg); backdrop-filter: blur(12px);
-            border-radius: 20px; padding: 20px; margin: 20px auto 10px auto;
-            max-width: 480px; width: calc(100% - 40px); border: 1px solid var(--border);
-            text-align: center; box-sizing: border-box;
-        }
-        .summary-text { font-size: 0.85rem; font-weight: 800; margin-bottom: 12px; }
-        .summary-bar-bg { background: rgba(0,0,0,0.1); border-radius: 10px; height: 8px; width: 100%; overflow: hidden; }
-        .summary-bar-fill { background: var(--success); height: 100%; width: 0%; transition: width 0.5s ease; }
+/* ── EX DETAILS ── */
+.ex-name{font-weight:700;font-size:1.02rem;color:var(--txt);display:flex;align-items:center;gap:8px;margin-bottom:5px;flex-wrap:wrap}
+.info-label{font-size:.52rem;color:var(--txt-dim);text-transform:uppercase;font-weight:700;letter-spacing:.6px}
+.info-value{font-size:.9rem;font-weight:700;color:var(--txt)}
+.timer-trigger{color:var(--accent);border-bottom:1px dotted var(--accent);cursor:pointer;transition:color .2s,border-color .2s}
+.timer-trigger:hover{color:var(--primary);border-color:var(--primary)}
+.weight-input{background:rgba(0,0,0,.12);border:1px solid var(--border);border-radius:var(--r-sm);color:var(--success);padding:6px 8px;width:62px;font-weight:800;text-align:center;font-family:'Space Grotesk',sans-serif;font-size:.88rem;transition:border-color .2s,box-shadow .2s,transform .15s}
+.weight-input:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(56,189,248,.18);transform:scale(1.04)}
+.weight-input.pr-active{color:var(--gold)!important;border-color:var(--gold)!important;animation:prGlow 2s ease-in-out infinite}
+.exercise-note{width:100%;display:none;margin-top:6px;background:rgba(0,0,0,.1);border:1px solid var(--border);border-radius:var(--r-sm);color:var(--txt);padding:10px;box-sizing:border-box;font-family:'Space Grotesk',sans-serif;resize:vertical;font-size:.84rem;transition:border-color .2s,box-shadow .2s}
+.exercise-note:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(56,189,248,.15)}
+.exercise-note.show{display:block;animation:fadeIn .25s ease}
+.exercise-note-display{font-size:.77rem;color:var(--txt-dim);margin-top:4px;margin-bottom:2px;line-height:1.55;cursor:pointer;padding:5px 8px;border-left:2px solid var(--border);border-radius:0 6px 6px 0;transition:color .2s,border-color .2s}
+.exercise-note-display:hover{color:var(--txt);border-left-color:var(--primary)}
 
-        .container { width: 100%; max-width: 480px; padding: 0 20px 20px 20px; box-sizing: border-box; margin: 0 auto; }
-        h2 { font-size: 0.8rem; color: var(--text-dim); text-transform: uppercase; margin: 25px 0 15px 0; display: flex; align-items: center; justify-content: space-between; }
+/* ── TIMER ── */
+#timer-widget{position:fixed;bottom:36px;left:36px;width:82px;height:82px;display:none;align-items:center;justify-content:center;z-index:2000;cursor:pointer;background:var(--surface);border-radius:50%;box-shadow:0 12px 32px rgba(0,0,0,.55);backdrop-filter:blur(18px);border:1px solid var(--border);transition:transform .2s,box-shadow .2s}
+#timer-widget:hover{transform:scale(1.08);box-shadow:0 16px 40px rgba(0,0,0,.65)}
+#timer-widget svg{position:absolute;top:0;left:0;width:100%;height:100%;transform:rotate(-90deg)}
+.ring-bg{fill:none;stroke:rgba(255,255,255,.06);stroke-width:6}
+.ring-progress{fill:none;stroke:var(--primary);stroke-width:6;stroke-linecap:round;stroke-dasharray:283;stroke-dashoffset:0;transition:stroke-dashoffset 1s linear,stroke .4s}
+#timer-text{position:relative;font-weight:800;font-size:1.45rem;color:var(--txt);z-index:2;font-family:'Syne',sans-serif}
 
-        .exercise-card {
-            background: var(--card-bg); backdrop-filter: blur(12px);
-            border-radius: 22px; padding: 22px; margin-bottom: 18px;
-            border: 1px solid var(--border); border-left: 5px solid var(--primary);
-            display: flex; align-items: flex-start; gap: 15px; position: relative; transition: all 0.3s ease;
-        }
-        .exercise-card.completed { opacity: 0.4; transform: scale(0.96); filter: grayscale(1); border-left-color: var(--success); }
+/* ── FAB ── */
+.fab-container{position:fixed;bottom:36px;right:36px;z-index:2000;display:flex;flex-direction:column;align-items:flex-end}
+.fab-menu{display:none;flex-direction:column;gap:10px;margin-bottom:14px}
+.fab-menu.show{display:flex;animation:fadeUp .3s cubic-bezier(.22,1,.36,1)}
+.fab-item{background:var(--surface2);backdrop-filter:blur(18px);border:1px solid var(--border);color:var(--txt);padding:12px 22px;border-radius:40px;font-weight:700;font-size:.84rem;cursor:pointer;box-shadow:0 6px 20px rgba(0,0,0,.28);white-space:nowrap;display:flex;align-items:center;gap:10px;font-family:'Space Grotesk',sans-serif;transition:transform .22s cubic-bezier(.22,1,.36,1),box-shadow .22s,background .22s;position:relative;overflow:hidden}
+.fab-item::before{content:'';position:absolute;inset:0;border-radius:inherit;background:linear-gradient(135deg,rgba(255,255,255,.05),transparent);pointer-events:none}
+.fab-item:hover{transform:translateX(-5px) scale(1.03);box-shadow:0 10px 30px rgba(0,0,0,.38)}
+.fab-item.fab-sync{color:var(--primary);border-color:rgba(56,189,248,.28);animation:syncPulse 2.5s ease-in-out infinite}
+.fab-btn{width:66px;height:66px;background:linear-gradient(135deg,var(--primary),#60a5fa);color:white;border:none;border-radius:50%;font-size:1.9rem;cursor:pointer;box-shadow:0 8px 28px rgba(56,189,248,.4);transition:transform .3s cubic-bezier(.34,1.56,.64,1),box-shadow .3s;display:flex;align-items:center;justify-content:center}
+.fab-btn:hover{transform:scale(1.1);box-shadow:0 12px 36px rgba(56,189,248,.55)}
+.fab-btn.active{transform:rotate(45deg) scale(1.05);background:linear-gradient(135deg,var(--danger),#fb923c);box-shadow:0 8px 28px rgba(248,113,113,.45)}
 
-        .btn-remove { display: none; position: absolute; right: -8px; top: -8px; background: var(--danger); color: white; border: none; border-radius: 50%; width: 26px; height: 26px; font-weight: bold; cursor: pointer; z-index: 10; align-items: center; justify-content: center; }
-        .btn-edit-ex { display: none; position: absolute; right: 26px; top: -8px; background: var(--primary); color: white; border: none; border-radius: 50%; width: 26px; height: 26px; font-weight: bold; cursor: pointer; z-index: 10; font-size: 14px; align-items: center; justify-content: center; }
-        .edit-mode .btn-remove, .edit-mode .btn-edit-ex { display: flex; }
+/* ── EMPTY ── */
+.empty-state{text-align:center;padding:50px 20px;color:var(--txt-dim);animation:fadeIn .5s ease}
+.empty-state i{font-size:3.5rem;opacity:.18;display:block;margin-bottom:12px;animation:float 3s ease-in-out infinite}
 
-        .custom-checkbox { min-width: 30px; height: 30px; position: relative; cursor: pointer; }
-        .custom-checkbox input { opacity: 0; width: 0; height: 0; }
-        .checkmark { position: absolute; top: 0; left: 0; height: 30px; width: 30px; border: 2px solid var(--border); border-radius: 12px; }
-        .custom-checkbox input:checked ~ .checkmark { background: var(--success); border-color: var(--success); }
-        .checkmark:after { content: ""; position: absolute; display: none; left: 10px; top: 5px; width: 6px; height: 11px; border: solid white; border-width: 0 3px 3px 0; transform: rotate(45deg); }
-        .custom-checkbox input:checked ~ .checkmark:after { display: block; }
+/* ── TOAST ── */
+#toast{position:fixed;bottom:115px;left:50%;transform:translateX(-50%);background:var(--surface2);border:1px solid var(--border-hi);color:var(--txt);padding:12px 22px;border-radius:40px;font-size:.82rem;font-weight:700;z-index:9999;display:none;white-space:nowrap;box-shadow:0 8px 28px rgba(0,0,0,.4);backdrop-filter:blur(18px)}
 
-        .ex-name { font-weight: 800; font-size: 1.05rem; color: var(--text-main); display: flex; align-items: center; gap: 8px; margin-bottom: 5px; }
-        .info-label { font-size: 0.55rem; color: var(--text-dim); text-transform: uppercase; font-weight: 800; }
-        .info-value { font-size: 0.9rem; font-weight: 700; color: var(--text-main); }
-        .timer-trigger { color: var(--accent); border-bottom: 1px dotted var(--accent); cursor: pointer; }
-        .weight-input { background: rgba(0,0,0,0.1); border: 1px solid var(--border); border-radius: 8px; color: var(--success); padding: 5px; width: 55px; font-weight: 800; text-align: center; transition: 0.3s; }
-        .weight-input.pr-active { color: var(--gold) !important; border-color: var(--gold) !important; box-shadow: 0 0 8px rgba(251, 191, 36, 0.3); }
+/* ── CONFETTI ── */
+.confetti-piece{position:fixed;pointer-events:none;z-index:9999;animation:confettiPop .75s cubic-bezier(.22,1,.36,1) forwards}
 
-        .exercise-note { width: 100%; display: none; margin-top: 5px; background: rgba(0,0,0,0.1); border: 1px solid var(--border); border-radius: 8px; color: var(--text-main); padding: 8px; box-sizing: border-box; font-family: 'Inter', sans-serif; resize: vertical; font-size: 0.85rem; transition: 0.3s; }
-        .exercise-note.show { display: block; }
-        .exercise-note-display {
-            font-size: 0.78rem; color: var(--text-dim); margin-top: 4px; margin-bottom: 2px;
-            line-height: 1.5; cursor: pointer; padding: 4px 6px;
-            border-left: 2px solid var(--border); border-radius: 0 6px 6px 0;
-        }
-        .exercise-note-display:hover { color: var(--text-main); border-left-color: var(--primary); }
+/* ── MODALS ── */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:3000;align-items:center;justify-content:center;backdrop-filter:blur(8px)}
+.modal-content{background:var(--surface2);border:1px solid var(--border);padding:28px;border-radius:26px;max-width:92%;width:360px;text-align:center;box-shadow:0 24px 60px rgba(0,0,0,.55);animation:modalIn .28s cubic-bezier(.34,1.56,.64,1);position:relative;overflow:hidden}
+.modal-content::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.12),transparent)}
+.modal-input{width:100%;box-sizing:border-box;background:rgba(0,0,0,.18);border:1px solid var(--border);border-radius:var(--r-sm);color:var(--txt);padding:13px 16px;font-size:.95rem;font-family:'Space Grotesk',sans-serif;font-weight:600;outline:none;transition:border-color .22s,box-shadow .22s}
+.modal-input:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(56,189,248,.18)}
+.modal-label{display:block;font-size:.68rem;font-weight:700;color:var(--txt-dim);text-transform:uppercase;margin-bottom:7px;letter-spacing:.6px}
+.modal-btn{flex:1;padding:13px;border-radius:var(--r-sm);border:none;font-size:.9rem;font-weight:700;cursor:pointer;font-family:'Space Grotesk',sans-serif;transition:transform .18s,box-shadow .18s,filter .18s;position:relative;overflow:hidden}
+.modal-btn:hover{filter:brightness(1.12);transform:translateY(-2px)}
+.modal-btn:active{transform:translateY(0) scale(.97)}
+.modal-btn-cancel{background:rgba(0,0,0,.2);color:var(--txt-dim);border:1px solid var(--border)}
+.modal-btn-confirm{background:linear-gradient(135deg,var(--primary),#60a5fa);color:white;box-shadow:0 4px 14px rgba(56,189,248,.35)}
+.modal-btn-danger{background:linear-gradient(135deg,var(--danger),#fb923c);color:white;box-shadow:0 4px 14px rgba(248,113,113,.35)}
+.heatmap-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:7px;margin:18px 0}
+.heat-square{aspect-ratio:1;border-radius:7px;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:.58rem;font-weight:800;transition:transform .2s,box-shadow .2s}
+.heat-square:hover{transform:scale(1.2)}
+.heat-square.active{animation:prGlow 2s ease-in-out infinite}
 
-        #timer-widget {
-            position: fixed; bottom: 35px; left: 35px; width: 80px; height: 80px;
-            display: none; align-items: center; justify-content: center; z-index: 2000;
-            cursor: pointer; background: var(--card-bg); border-radius: 50%;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.5); backdrop-filter: blur(10px);
-            border: 1px solid var(--border);
-        }
-        #timer-widget svg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; transform: rotate(-90deg); }
-        .ring-bg { fill: none; stroke: rgba(255,255,255,0.05); stroke-width: 6; }
-        .ring-progress { fill: none; stroke: var(--primary); stroke-width: 6; stroke-linecap: round; stroke-dasharray: 283; stroke-dashoffset: 0; transition: stroke-dashoffset 1s linear, stroke 0.3s ease; }
-        #timer-text { position: relative; font-weight: 800; font-size: 1.5rem; color: var(--text-main); z-index: 2; }
+/* ── SYNC MODAL ── */
+.sync-modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:4000;align-items:center;justify-content:center;backdrop-filter:blur(12px)}
+.sync-modal-box{background:var(--surface2);border:1px solid var(--border);border-radius:28px;padding:32px 28px;max-width:92%;width:420px;box-shadow:0 32px 80px rgba(0,0,0,.65);animation:modalIn .3s cubic-bezier(.34,1.56,.64,1);max-height:90vh;overflow-y:auto;position:relative}
+.sync-modal-box::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(56,189,248,.3),transparent)}
+.sync-tabs{display:flex;background:rgba(0,0,0,.22);border-radius:14px;padding:4px;gap:4px;margin-bottom:22px}
+.sync-tab{flex:1;padding:10px;border:none;border-radius:10px;font-weight:800;font-size:.8rem;cursor:pointer;background:transparent;color:var(--txt-dim);font-family:'Space Grotesk',sans-serif;display:flex;align-items:center;justify-content:center;gap:6px;transition:all .25s}
+.sync-tab.active{background:var(--primary);color:white;box-shadow:0 4px 16px rgba(56,189,248,.38)}
+.sync-panel{display:none}.sync-panel.active{display:block;animation:fadeIn .2s ease}
+.qr-wrapper{background:white;border-radius:20px;padding:18px;display:flex;align-items:center;justify-content:center;margin:16px auto;width:fit-content;position:relative;overflow:hidden}
+.qr-scan-line{position:absolute;left:0;right:0;height:3px;background:linear-gradient(90deg,transparent,var(--primary),transparent);animation:scanLine 2s linear infinite;opacity:.75}
+.link-box{background:rgba(0,0,0,.22);border:1px solid var(--border);border-radius:14px;padding:14px;font-family:monospace;font-size:.7rem;color:var(--txt-dim);word-break:break-all;line-height:1.5;max-height:88px;overflow-y:auto;cursor:pointer;transition:border-color .2s;position:relative}
+.link-box:hover{border-color:var(--primary)}
+.copy-badge{position:absolute;top:8px;right:8px;background:var(--primary);color:white;font-size:.62rem;font-weight:800;padding:3px 9px;border-radius:8px;font-family:'Space Grotesk',sans-serif}
+.import-paste-area{width:100%;box-sizing:border-box;background:rgba(0,0,0,.16);border:1.5px dashed var(--border);border-radius:14px;color:var(--txt);padding:14px;font-family:monospace;font-size:.74rem;resize:vertical;min-height:88px;outline:none;transition:border-color .22s,box-shadow .22s}
+.import-paste-area:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(56,189,248,.15)}
+.sync-info-row{display:flex;align-items:center;gap:10px;background:rgba(56,189,248,.07);border:1px solid rgba(56,189,248,.18);border-radius:12px;padding:12px;margin-bottom:15px;font-size:.79rem;color:var(--txt-dim)}
+.sync-info-row i{color:var(--primary);font-size:1.2rem;flex-shrink:0}
+.sync-option{display:flex;align-items:center;gap:12px;padding:12px;border-radius:12px;cursor:pointer;border:1px solid var(--border);margin-bottom:8px;transition:border-color .2s,background .2s}
+.sync-option:hover{border-color:var(--primary);background:rgba(56,189,248,.05)}
+.sync-option input[type=checkbox]{accent-color:var(--primary);width:16px;height:16px}
+.sync-option-label{font-size:.84rem;font-weight:700}.sync-option-desc{font-size:.7rem;color:var(--txt-dim);margin-top:2px}
+.success-icon{display:none;text-align:center;padding:20px 0;animation:successPop .4s cubic-bezier(.34,1.56,.64,1) forwards}
+.success-icon i{font-size:4rem;color:var(--success)}
 
-        .fab-container { position: fixed; bottom: 35px; right: 35px; z-index: 2000; display: flex; flex-direction: column; align-items: flex-end; }
-        .fab-menu { display: none; flex-direction: column; gap: 12px; margin-bottom: 15px; }
-        .fab-menu.show { display: flex; }
-        .fab-item { background: var(--card-bg); backdrop-filter: blur(15px); border: 1px solid var(--border); color: var(--text-main); padding: 12px 20px; border-radius: 25px; font-weight: 800; font-size: 0.85rem; cursor: pointer; box-shadow: 0 5px 15px rgba(0,0,0,0.2); white-space: nowrap; display: flex; align-items: center; gap: 10px; }
-        .fab-item.fab-sync { color: var(--primary); border-color: rgba(56,189,248,0.3); animation: syncPulse 2.5s ease-in-out infinite; }
-        .fab-btn { width: 65px; height: 65px; background: var(--primary); color: white; border: none; border-radius: 50%; font-size: 2rem; cursor: pointer; box-shadow: 0 8px 25px rgba(0,0,0,0.3); transition: 0.3s; display: flex; align-items: center; justify-content: center; }
-        .fab-btn.active { transform: rotate(45deg); background: var(--danger); }
+/* ✅ OPT 6: Remove backdrop-filter no mobile — economiza GPU em dispositivos
+   com poder gráfico limitado. Usa cor opaca equivalente como fallback. */
+@media(max-width:1023px){
+  .exercise-card,.summary-card,.fab-item{backdrop-filter:none}
+  .exercise-card{background:rgba(12,20,40,0.96)}
+  .summary-card{background:rgba(12,20,40,0.96)}
+  .fab-item{background:rgba(16,26,50,0.98)}
+  #toast{backdrop-filter:none;background:rgba(16,26,50,0.98)}
+  [data-theme="light"] .exercise-card{background:rgba(255,255,255,0.97)}
+  [data-theme="light"] .summary-card{background:rgba(255,255,255,0.97)}
+  [data-theme="light"] .fab-item{background:rgba(246,249,255,0.99)}
+  [data-theme="light"] #toast{background:rgba(246,249,255,0.99)}
+}
 
-        .empty-state { text-align: center; padding: 40px; color: var(--text-dim); }
+/* ── TEMPLATES MODAL ── */
+.tpl-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:16px 0}
+.tpl-card{
+  background:rgba(0,0,0,.18);border:1px solid var(--border);border-radius:14px;
+  padding:14px 12px;cursor:pointer;text-align:left;
+  transition:border-color .2s,background .2s,transform .18s;
+  font-family:'Space Grotesk',sans-serif;
+}
+.tpl-card:hover{border-color:var(--primary);background:var(--primary-d);transform:translateY(-2px)}
+.tpl-card-icon{font-size:1.6rem;margin-bottom:6px}
+.tpl-card-name{font-size:.82rem;font-weight:700;color:var(--txt)}
+.tpl-card-count{font-size:.68rem;color:var(--txt-dim);margin-top:2px}
 
-        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 3000; align-items: center; justify-content: center; backdrop-filter: blur(5px); }
-        .modal-content { background: var(--card-bg); border: 1px solid var(--border); padding: 25px; border-radius: 20px; max-width: 90%; width: 350px; text-align: center; box-shadow: 0 15px 35px rgba(0,0,0,0.5); animation: modalIn 0.2s ease-out; }
+/* ── DRAG AND DROP ── */
+.exercise-card.drag-over{
+  border-color:var(--primary)!important;
+  box-shadow:0 0 0 2px var(--primary),0 8px 32px rgba(56,189,248,.25)!important;
+}
+.exercise-card.dragging{
+  opacity:.4!important;transform:scale(.97)!important;
+  cursor:grabbing!important;
+}
+/* Alça de drag — só visível no modo edição */
+.drag-handle{
+  display:none;align-items:center;justify-content:center;
+  color:var(--txt-dim);cursor:grab;padding:4px;
+  border-radius:6px;transition:color .2s,background .2s;
+  touch-action:none;min-width:20px;
+}
+.drag-handle:hover{color:var(--primary);background:var(--primary-d)}
+.drag-handle:active{cursor:grabbing}
+.edit-mode .drag-handle{display:flex}
 
-        @keyframes modalIn {
-            from { opacity: 0; transform: scale(0.92) translateY(12px); }
-            to   { opacity: 1; transform: scale(1)    translateY(0);     }
-        }
+/* ── WEIGHT HISTORY MODAL ── */
+.wh-modal-overlay{
+  display:none;position:fixed;inset:0;background:rgba(0,0,0,.78);
+  z-index:3500;align-items:center;justify-content:center;backdrop-filter:blur(8px);
+}
+.wh-modal-box{
+  background:var(--surface2);border:1px solid var(--border);border-radius:26px;
+  padding:28px;max-width:92%;width:420px;
+  box-shadow:0 24px 60px rgba(0,0,0,.55);
+  animation:modalIn .28s cubic-bezier(.34,1.56,.64,1);
+  max-height:85vh;overflow-y:auto;
+}
+.wh-chart{
+  width:100%;height:120px;position:relative;
+  margin:16px 0 8px;overflow:visible;
+}
+.wh-chart svg{width:100%;height:100%;overflow:visible}
+.wh-list{display:flex;flex-direction:column;gap:6px;margin-top:14px;max-height:200px;overflow-y:auto}
+.wh-entry{
+  display:flex;align-items:center;justify-content:space-between;
+  background:rgba(0,0,0,.12);border-radius:10px;padding:8px 12px;
+  font-size:.8rem;
+}
+.wh-entry-date{color:var(--txt-dim)}
+.wh-entry-val{font-weight:800;color:var(--success)}
+.wh-entry-val.wh-pr{color:var(--gold)}
+.wh-empty{text-align:center;color:var(--txt-dim);font-size:.82rem;padding:20px 0}
+.wh-del-btn{
+  background:none;border:none;color:var(--txt-dim);cursor:pointer;
+  font-size:.8rem;padding:2px 6px;border-radius:6px;transition:color .2s,background .2s;
+}
+.wh-del-btn:hover{color:var(--danger);background:rgba(248,113,113,.12)}
 
-        .modal-input { width: 100%; box-sizing: border-box; background: rgba(0,0,0,0.2); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); padding: 12px 14px; font-size: 0.95rem; font-family: 'Inter', sans-serif; font-weight: 600; outline: none; transition: 0.2s; }
-        .modal-input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(56,189,248,0.15); }
-        .modal-label { display: block; font-size: 0.7rem; font-weight: 800; color: var(--text-dim); text-transform: uppercase; margin-bottom: 6px; letter-spacing: 0.5px; }
-        .modal-btn { flex: 1; padding: 12px; border-radius: 10px; border: none; font-size: 0.9rem; font-weight: 800; cursor: pointer; font-family: 'Inter', sans-serif; transition: 0.2s; }
-        .modal-btn:hover { filter: brightness(1.15); }
-        .modal-btn-cancel  { background: rgba(0,0,0,0.15); color: var(--text-dim); border: 1px solid var(--border); }
-        .modal-btn-confirm { background: var(--primary); color: white; }
-        .modal-btn-danger  { background: var(--danger);  color: white; }
-        .heatmap-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin: 20px 0; }
-        .heat-square { aspect-ratio: 1; border-radius: 6px; border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 0.6rem; font-weight: 800; opacity: 0.9; }
+/* ── SETTINGS MODAL ── */
+.cfg-modal-overlay{
+  display:none;position:fixed;inset:0;background:rgba(0,0,0,.78);
+  z-index:3600;align-items:center;justify-content:center;backdrop-filter:blur(8px);
+}
+.cfg-modal-box{
+  background:var(--surface2);border:1px solid var(--border);border-radius:26px;
+  padding:28px;max-width:92%;width:440px;
+  box-shadow:0 24px 60px rgba(0,0,0,.55);
+  animation:modalIn .28s cubic-bezier(.34,1.56,.64,1);
+  max-height:90vh;overflow-y:auto;
+}
+.cfg-section{
+  margin-bottom:22px;padding-bottom:22px;
+  border-bottom:1px solid var(--border);
+}
+.cfg-section:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0}
+.cfg-section-title{
+  font-size:.65rem;font-weight:800;text-transform:uppercase;
+  letter-spacing:1px;color:var(--txt-dim);margin-bottom:14px;
+}
+.cfg-row{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:10px 0;gap:12px;
+}
+.cfg-label{font-size:.88rem;font-weight:600;color:var(--txt)}
+.cfg-sublabel{font-size:.72rem;color:var(--txt-dim);margin-top:2px}
 
-        /* ===== DESKTOP ===== */
-        @media (min-width: 1024px) {
-            body { padding-bottom: 0; }
-            header {
-                position: fixed; left: 0; top: 0; width: 260px; height: 100vh;
-                background: var(--header-bg); border-right: 1px solid var(--border); border-bottom: none;
-                z-index: 100; padding: 40px 0; display: flex; flex-direction: column;
-            }
-            .desktop-side-actions {
-                margin-top: auto; margin-bottom: 120px; padding: 0 20px; display: flex; flex-direction: column; gap: 10px;
-            }
-            .desktop-side-actions button {
-                background: var(--card-bg); border: 1px solid var(--border); padding: 12px; border-radius: 8px;
-                cursor: pointer; font-size: 0.8rem; font-weight: 800; color: var(--text-main);
-                text-align: left; transition: 0.2s; display: flex; align-items: center; gap: 10px;
-            }
-            .desktop-side-actions button:hover { filter: brightness(1.2); }
-            .desktop-side-actions .btn-sync-desktop { color: var(--primary); border-color: rgba(56,189,248,0.3); }
+/* Toggle switch */
+.cfg-toggle{position:relative;width:46px;height:26px;flex-shrink:0}
+.cfg-toggle input{opacity:0;width:0;height:0}
+.cfg-toggle-track{
+  position:absolute;inset:0;border-radius:30px;
+  background:rgba(255,255,255,.12);cursor:pointer;
+  transition:background .25s;
+}
+.cfg-toggle input:checked ~ .cfg-toggle-track{background:var(--primary)}
+.cfg-toggle-track::after{
+  content:'';position:absolute;width:20px;height:20px;border-radius:50%;
+  background:white;top:3px;left:3px;
+  transition:transform .25s cubic-bezier(.34,1.56,.64,1);
+  box-shadow:0 2px 6px rgba(0,0,0,.3);
+}
+.cfg-toggle input:checked ~ .cfg-toggle-track::after{transform:translateX(20px)}
 
-            #tabs-wrapper { position: fixed; left: 20px; top: 100px; width: 220px; max-width: none; border: none; z-index: 101; background: transparent; }
-            .tabs-container { flex-direction: column; background: transparent; gap: 8px; overflow: visible; }
-            .tab-btn { text-align: left; padding: 12px 20px; font-size: 0.95rem; border-radius: 10px; }
-            .tab-btn.active { background: var(--primary); color: white; box-shadow: none; }
-            .tab-controls { display: flex !important; padding: 6px 0 0 0; background: transparent; justify-content: flex-start; }
-            .btn-add-tab { width: 100%; padding: 10px 20px; border-radius: 10px; font-size: 0.85rem; justify-content: flex-start; }
+/* Theme selector */
+.cfg-theme-group{display:flex;gap:8px;margin-top:8px}
+.cfg-theme-btn{
+  flex:1;padding:10px 6px;border-radius:var(--r-sm);border:2px solid var(--border);
+  background:rgba(0,0,0,.15);color:var(--txt-dim);cursor:pointer;
+  font-family:'Space Grotesk',sans-serif;font-size:.75rem;font-weight:700;
+  transition:all .2s;display:flex;flex-direction:column;align-items:center;gap:5px;
+}
+.cfg-theme-btn i{font-size:1.2rem}
+.cfg-theme-btn.active{border-color:var(--primary);color:var(--primary);background:var(--primary-d)}
+.cfg-theme-btn:hover:not(.active){border-color:rgba(255,255,255,.2);color:var(--txt)}
 
-            /* Badge "HOJE" na sidebar */
-            .tab-btn-wrapper .tab-suggested-dot { display: none !important; }
-            .tab-btn-wrapper.suggested .tab-btn::after {
-                content: 'HOJE'; font-size: 0.55rem; font-weight: 800;
-                background: var(--gold); color: #0f172a;
-                padding: 2px 6px; border-radius: 20px; margin-left: 8px;
-                vertical-align: middle; letter-spacing: 0.5px;
-            }
+/* Unit selector */
+.cfg-unit-group{display:flex;background:rgba(0,0,0,.2);border-radius:10px;padding:3px;gap:3px}
+.cfg-unit-btn{
+  flex:1;padding:8px 12px;border-radius:8px;border:none;
+  background:transparent;color:var(--txt-dim);cursor:pointer;
+  font-family:'Space Grotesk',sans-serif;font-size:.82rem;font-weight:700;
+  transition:all .2s;
+}
+.cfg-unit-btn.active{background:var(--primary);color:white;box-shadow:0 2px 8px rgba(56,189,248,.35)}
 
-            .summary-card { position: fixed; right: 30px; bottom: 30px; width: 250px; margin: 0; z-index: 102; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
-            .action-bar-desktop {
-                margin-left: 280px; max-width: 1200px; width: calc(100% - 280px);
-                padding: 40px 20px 0 20px; box-sizing: border-box;
-                display: flex !important; gap: 15px; margin-bottom: 10px; flex-wrap: wrap;
-            }
-            .action-bar-desktop button {
-                background: var(--card-bg); border: 1px solid var(--border); padding: 10px 20px;
-                border-radius: 8px; cursor: pointer; font-size: 0.85rem; font-weight: 800;
-                color: var(--text-main); transition: 0.2s; display: flex; align-items: center; gap: 8px;
-            }
-            .action-bar-desktop button:hover { filter: brightness(1.2); }
-            .container { margin-left: 280px; max-width: 1200px; width: calc(100% - 280px); padding-top: 10px; }
-            #main-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 20px; align-items: start; }
-            h2 { grid-column: 1 / -1; font-size: 1.6rem; margin-bottom: 30px; }
-            .fab-container { display: none; }
-            .desktop-only { display: flex !important; }
-        }
-        @media (max-width: 1023px) {
-            .desktop-only { display: none !important; }
-        }
-    </style>
+/* Accent color picker */
+.cfg-accent-grid{display:flex;flex-wrap:wrap;gap:10px;margin-top:10px}
+.cfg-accent-swatch{
+  width:36px;height:36px;border-radius:50%;cursor:pointer;border:3px solid transparent;
+  transition:transform .18s cubic-bezier(.34,1.56,.64,1),border-color .18s,box-shadow .18s;
+  position:relative;
+}
+.cfg-accent-swatch:hover{transform:scale(1.15)}
+.cfg-accent-swatch.active{
+  border-color:white;
+  box-shadow:0 0 0 2px var(--txt-dim);
+  transform:scale(1.2);
+}
+.cfg-accent-swatch.active::after{
+  content:'✓';position:absolute;inset:0;display:flex;align-items:center;
+  justify-content:center;color:white;font-size:.75rem;font-weight:800;
+}
+
+/* Danger zone */
+.cfg-danger-btn{
+  width:100%;padding:11px;border-radius:var(--r-sm);border:1px solid var(--danger);
+  background:transparent;color:var(--danger);cursor:pointer;
+  font-family:'Space Grotesk',sans-serif;font-size:.85rem;font-weight:700;
+  transition:background .2s,transform .18s;display:flex;align-items:center;
+  justify-content:center;gap:8px;
+}
+.cfg-danger-btn:hover{background:rgba(248,113,113,.1);transform:translateY(-1px)}
+
+/* ── DESKTOP ── */
+@media(min-width:1024px){
+  body{padding-bottom:0}
+  header{position:fixed;left:0;top:0;width:270px;height:100vh;background:rgba(6,12,24,0.82);border-right:1px solid var(--border);border-bottom:none;z-index:100;padding:44px 0;display:flex;flex-direction:column;animation:none}
+  [data-theme="light"] header{background:rgba(238,242,251,0.85)}
+  .desktop-side-actions{margin-top:auto;margin-bottom:100px;padding:0 20px;display:flex;flex-direction:column;gap:9px}
+  .desktop-side-actions button{background:var(--surface);border:1px solid var(--border);padding:12px 16px;border-radius:var(--r-sm);cursor:pointer;font-size:.8rem;font-weight:700;color:var(--txt);text-align:left;font-family:'Space Grotesk',sans-serif;transition:transform .2s,box-shadow .2s,background .2s;display:flex;align-items:center;gap:10px}
+  .desktop-side-actions button:hover{transform:translateX(4px);background:var(--primary-d);box-shadow:0 4px 16px rgba(0,0,0,.2)}
+  .desktop-side-actions .btn-sync-desktop{color:var(--primary);border-color:rgba(56,189,248,.25)}
+  #tabs-wrapper{position:fixed;left:20px;top:105px;width:228px;max-width:none;border:none;z-index:101;background:transparent}
+  .tabs-container{flex-direction:column;background:transparent;gap:6px;overflow:visible}
+  .tab-btn{text-align:left;padding:12px 20px;font-size:.92rem;border-radius:var(--r-sm)}
+  .tab-btn::after{display:none!important}
+  .tab-btn.active{background:linear-gradient(135deg,var(--primary),#60a5fa);color:white;box-shadow:0 6px 22px rgba(56,189,248,.35);border-radius:var(--r-sm)}
+  .tab-controls{display:none!important}
+  .tab-btn-wrapper .tab-suggested-dot{display:none!important}
+  .tab-btn-wrapper.suggested .tab-btn::after{content:'HOJE';font-size:.52rem;font-weight:800;background:var(--gold);color:#060c18;padding:2px 7px;border-radius:20px;margin-left:8px;vertical-align:middle;display:inline-block!important;width:auto;height:auto;position:static;background-clip:initial;-webkit-background-clip:initial}
+  .tab-btn-wrapper.suggested .tab-btn.active::after{display:inline-block!important}
+  .summary-card{position:fixed;right:30px;bottom:30px;width:258px;margin:0;z-index:102}
+  .action-bar-desktop{margin-left:292px;max-width:1200px;width:calc(100% - 292px);padding:38px 20px 0;box-sizing:border-box;display:flex!important;gap:12px;margin-bottom:10px;flex-wrap:wrap}
+  .action-bar-desktop button{background:var(--surface);border:1px solid var(--border);padding:10px 20px;border-radius:var(--r-sm);cursor:pointer;font-size:.83rem;font-weight:700;color:var(--txt);font-family:'Space Grotesk',sans-serif;transition:transform .2s,box-shadow .2s,background .2s;display:flex;align-items:center;gap:8px}
+  .action-bar-desktop button:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,.25);background:var(--primary-d)}
+  .container{margin-left:292px;max-width:1200px;width:calc(100% - 292px);padding-top:10px}
+  #main-container{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:18px;align-items:start}
+  h2{grid-column:1/-1;font-size:1.5rem;margin-bottom:28px}
+  .fab-container{display:none}
+  .desktop-only{display:flex!important}
+}
+@media(max-width:1023px){.desktop-only{display:none!important}}
+</style>
 </head>
 <body onload="init()">
 
 <header>
-    <h1>TRAINING PRO</h1>
-    <div class="desktop-side-actions desktop-only">
-        <button onclick="fabEdit()" id="desktop-edit-btn"><i class="ph-bold ph-gear"></i> Modo Edição</button>
-        <button onclick="toggleTheme()"><i class="ph-bold ph-sun-dim"></i> Mudar Tema</button>
-        <button onclick="exportData()"><i class="ph-bold ph-download-simple"></i> Exportar Backup</button>
-        <button onclick="document.getElementById('import-file').click()"><i class="ph-bold ph-upload-simple"></i> Importar Backup</button>
-        <button onclick="exportPDF()" style="color:var(--accent);"><i class="ph-bold ph-file-pdf"></i> Baixar Ficha PDF</button>
-    </div>
+  <h1>TRAINING PRO</h1>
+  <div class="desktop-side-actions desktop-only">
+    <button onclick="fabEdit()" id="desktop-edit-btn"><i class="ph-bold ph-gear"></i> Modo Edição</button>
+    <button onclick="openSettings()"><i class="ph-bold ph-sliders"></i> Configurações</button>
+    <button onclick="exportData()"><i class="ph-bold ph-download-simple"></i> Exportar Backup</button>
+    <button onclick="document.getElementById('import-file').click()"><i class="ph-bold ph-upload-simple"></i> Importar Backup</button>
+    <button onclick="exportPDF()" style="color:var(--accent)"><i class="ph-bold ph-file-pdf"></i> Baixar Ficha PDF</button>
+  </div>
 </header>
 
 <div id="tabs-wrapper">
-    <div class="tabs-container" id="tabs-list"></div>
-    <div class="tab-controls">
-        <button class="btn-add-tab" onclick="addTab()"><i class="ph-bold ph-plus"></i> Nova Aba</button>
-    </div>
+  <div class="tabs-container" id="tabs-list"></div>
+  <div class="tab-controls">
+    <button class="btn-add-tab" onclick="openTemplatesModal()"><i class="ph-bold ph-magic-wand"></i> Nova Aba</button>
+  </div>
 </div>
 
 <div class="summary-card">
-    <div class="summary-text" id="summary-text">Carregando...</div>
-    <div class="summary-bar-bg"><div class="summary-bar-fill" id="summary-bar-fill"></div></div>
+  <div class="summary-text" id="summary-text">Carregando...</div>
+  <div class="summary-bar-bg"><div class="summary-bar-fill" id="summary-bar-fill"></div></div>
 </div>
 
 <div class="action-bar-desktop desktop-only">
-    <button onclick="openSyncModal()" style="color:var(--primary); border-color:rgba(56,189,248,0.3);"><i class="ph-bold ph-share-network"></i> Sincronizar</button>
-    <button onclick="addTab()" style="color:var(--primary); border-color:var(--primary);"><i class="ph-bold ph-plus"></i> Nova Aba</button>
-    <button onclick="fabAdd()" style="color:var(--primary); border-color:var(--primary);"><i class="ph-bold ph-plus-circle"></i> Novo Exercício</button>
-    <button onclick="fabReset()"><i class="ph-bold ph-arrows-counter-clockwise"></i> Limpar Hoje</button>
-    <button onclick="openHistory()" style="background:var(--primary); color:white; border:none;"><i class="ph-bold ph-calendar"></i> Frequência</button>
+  <button onclick="openSyncModal()" style="color:var(--primary);border-color:rgba(56,189,248,.28)"><i class="ph-bold ph-share-network"></i> Sincronizar</button>
+  <button onclick="openTemplatesModal()" style="color:var(--primary)"><i class="ph-bold ph-magic-wand"></i> Nova Aba</button>
+  <button onclick="fabAdd()" style="color:var(--primary)"><i class="ph-bold ph-plus-circle"></i> Novo Exercício</button>
+  <button onclick="fabReset()"><i class="ph-bold ph-arrows-counter-clockwise"></i> Limpar Hoje</button>
+  <button onclick="openHistory()" style="background:linear-gradient(135deg,var(--primary),#60a5fa);color:white;border:none"><i class="ph-bold ph-calendar"></i> Frequência</button>
 </div>
 
 <div class="container" id="main-container"></div>
+<div id="toast"></div>
 
 <div id="timer-widget" onclick="stopTimer()">
-    <svg viewBox="0 0 100 100">
-        <circle class="ring-bg" cx="50" cy="50" r="45"></circle>
-        <circle class="ring-progress" id="progress-ring" cx="50" cy="50" r="45"></circle>
-    </svg>
-    <div id="timer-text">00</div>
+  <svg viewBox="0 0 100 100">
+    <circle class="ring-bg" cx="50" cy="50" r="45"></circle>
+    <circle class="ring-progress" id="progress-ring" cx="50" cy="50" r="45"></circle>
+  </svg>
+  <div id="timer-text">00</div>
 </div>
 
-<input type="file" id="import-file"     style="display:none" onchange="importData(event)">
+<input type="file" id="import-file" style="display:none" onchange="importData(event)">
 <input type="file" id="import-pdf-file" style="display:none" accept=".pdf" onchange="importPDF(event)">
 
 <div class="fab-container">
-    <div class="fab-menu" id="fab-menu">
-        <div class="fab-item fab-sync" onclick="openSyncModal()"><i class="ph-bold ph-share-network"></i> Sincronizar / QR Code</div>
-        <div class="fab-item" onclick="exportData()"><i class="ph-bold ph-download-simple"></i> Exportar Backup</div>
-        <div class="fab-item" onclick="document.getElementById('import-file').click()"><i class="ph-bold ph-upload-simple"></i> Importar Backup</div>
-        <div class="fab-item" onclick="exportPDF()" style="color:var(--accent);"><i class="ph-bold ph-file-pdf"></i> Baixar Ficha PDF</div>
-        <hr style="width:100%; border:0; border-top:1px solid var(--border); margin:4px 0;">
-        <div class="fab-item" onclick="openHistory()"><i class="ph-bold ph-calendar"></i> Frequência de Treino</div>
-        <div class="fab-item" onclick="toggleTheme()"><i class="ph-bold ph-moon"></i> Mudar Tema</div>
-        <div class="fab-item" onclick="fabReset()"><i class="ph-bold ph-arrows-counter-clockwise"></i> Limpar Treino</div>
-        <div class="fab-item" onclick="fabEdit()" id="edit-fab-text"><i class="ph-bold ph-gear"></i> Modo Edição</div>
-        <div class="fab-item" onclick="fabAdd()" style="color:var(--primary);"><i class="ph-bold ph-plus"></i> Novo Exercício</div>
-    </div>
-    <button class="fab-btn" id="fab-btn" onclick="toggleFab()"><i class="ph-bold ph-plus"></i></button>
+  <div class="fab-menu" id="fab-menu">
+    <div class="fab-item fab-sync" onclick="openSyncModal()"><i class="ph-bold ph-share-network"></i> Sincronizar / QR Code</div>
+    <div class="fab-item" onclick="exportData()"><i class="ph-bold ph-download-simple"></i> Exportar Backup</div>
+    <div class="fab-item" onclick="document.getElementById('import-file').click()"><i class="ph-bold ph-upload-simple"></i> Importar Backup</div>
+    <div class="fab-item" onclick="exportPDF()" style="color:var(--accent)"><i class="ph-bold ph-file-pdf"></i> Baixar Ficha PDF</div>
+    <hr style="width:100%;border:0;border-top:1px solid var(--border);margin:4px 0">
+    <div class="fab-item" onclick="openSettings()"><i class="ph-bold ph-sliders"></i> Configurações</div>
+    <div class="fab-item" onclick="openHistory()"><i class="ph-bold ph-calendar"></i> Frequência de Treino</div>
+    <div class="fab-item" id="fab-theme-btn" onclick="openSettings()"><i class="ph-bold ph-sliders"></i> Configurações</div>
+    <div class="fab-item" onclick="fabReset()"><i class="ph-bold ph-arrows-counter-clockwise"></i> Limpar Treino</div>
+    <div class="fab-item" onclick="fabEdit()" id="edit-fab-text"><i class="ph-bold ph-gear"></i> Modo Edição</div>
+    <div class="fab-item" onclick="openTemplatesModal()"><i class="ph-bold ph-magic-wand"></i> Nova Aba</div>
+    <div class="fab-item" onclick="fabAdd()" style="color:var(--primary)"><i class="ph-bold ph-plus"></i> Novo Exercício</div>
+  </div>
+  <button class="fab-btn" id="fab-btn" onclick="toggleFab()"><i class="ph-bold ph-plus"></i></button>
 </div>
 
-<!-- ===== MODAL DE SINCRONIZAÇÃO ===== -->
+<!-- SETTINGS MODAL -->
+<div class="cfg-modal-overlay" id="cfg-modal">
+  <div class="cfg-modal-box">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:22px">
+      <h3 style="margin:0;font-family:'Syne',sans-serif;color:var(--txt);font-size:1.1rem">
+        <i class="ph-bold ph-sliders" style="color:var(--primary)"></i> Configurações
+      </h3>
+      <button onclick="closeSettings()" style="background:rgba(255,255,255,.07);border:none;color:var(--txt-dim);font-size:1.3rem;cursor:pointer;border-radius:50%;width:36px;height:36px;display:flex;align-items:center;justify-content:center"><i class="ph-bold ph-x"></i></button>
+    </div>
+    <!-- TEMA -->
+    <div class="cfg-section">
+      <div class="cfg-section-title"><i class="ph-bold ph-palette"></i> Tema</div>
+      <div class="cfg-theme-group">
+        <button class="cfg-theme-btn" id="theme-btn-dark"  onclick="setTheme('dark')"><i class="ph-bold ph-moon"></i> Escuro</button>
+        <button class="cfg-theme-btn" id="theme-btn-light" onclick="setTheme('light')"><i class="ph-bold ph-sun"></i> Claro</button>
+        <button class="cfg-theme-btn" id="theme-btn-auto"  onclick="setTheme('auto')"><i class="ph-bold ph-devices"></i> Sistema</button>
+      </div>
+    </div>
+    <!-- COR DE ACENTO -->
+    <div class="cfg-section">
+      <div class="cfg-section-title"><i class="ph-bold ph-paint-brush"></i> Cor de Acento</div>
+      <p style="font-size:.75rem;color:var(--txt-dim);margin:0 0 10px">Personaliza botões, abas ativas e destaques</p>
+      <div class="cfg-accent-grid" id="cfg-accent-grid"></div>
+    </div>
+    <!-- UNIDADE DE PESO -->
+    <div class="cfg-section">
+      <div class="cfg-section-title"><i class="ph-bold ph-scales"></i> Unidade de Peso</div>
+      <div class="cfg-row" style="padding:0">
+        <div>
+          <div class="cfg-label">Exibir pesos em</div>
+          <div class="cfg-sublabel">Converte todos os valores registrados</div>
+        </div>
+        <div class="cfg-unit-group">
+          <button class="cfg-unit-btn" id="unit-btn-kg" onclick="setUnit('kg')">kg</button>
+          <button class="cfg-unit-btn" id="unit-btn-lb" onclick="setUnit('lb')">lb</button>
+        </div>
+      </div>
+    </div>
+    <!-- DADOS -->
+    <div class="cfg-section">
+      <div class="cfg-section-title"><i class="ph-bold ph-database"></i> Dados</div>
+      <button class="cfg-danger-btn" onclick="confirmResetAll()">
+        <i class="ph-bold ph-trash"></i> Resetar todos os dados
+      </button>
+      <p style="font-size:.7rem;color:var(--txt-dim);margin:8px 0 0;text-align:center">Apaga treinos, pesos, histórico e configurações</p>
+    </div>
+  </div>
+</div>
+
+<!-- TEMPLATES MODAL -->
+<div class="modal-overlay" id="templates-modal">
+  <div class="modal-content" style="width:420px;text-align:left;max-height:90vh;overflow-y:auto">
+    <h3 style="margin-top:0;color:var(--txt);font-family:'Syne',sans-serif;text-align:center">
+      <i class="ph-bold ph-magic-wand" style="color:var(--primary)"></i> Escolha um Template
+    </h3>
+    <p style="font-size:.78rem;color:var(--txt-dim);margin:0 0 4px;text-align:center">Selecione uma estrutura pronta para começar</p>
+    <div class="tpl-grid" id="tpl-grid"></div>
+    <div style="display:flex;gap:10px;margin-top:4px">
+      <button class="modal-btn modal-btn-cancel" onclick="closeTemplatesModal()">Cancelar</button>
+      <button class="modal-btn modal-btn-confirm" onclick="useBlankTab()"><i class="ph-bold ph-plus"></i> Aba em Branco</button>
+    </div>
+  </div>
+</div>
+
+<!-- WEIGHT HISTORY MODAL -->
+<div class="wh-modal-overlay" id="wh-modal">
+  <div class="wh-modal-box">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <div>
+        <h3 id="wh-modal-title" style="margin:0;color:var(--txt);font-family:'Syne',sans-serif;font-size:1rem"></h3>
+        <p id="wh-modal-pr" style="margin:4px 0 0;font-size:.74rem;color:var(--gold);font-weight:700"></p>
+      </div>
+      <button onclick="closeWhModal()" style="background:rgba(255,255,255,.07);border:none;color:var(--txt-dim);font-size:1.3rem;cursor:pointer;border-radius:50%;width:36px;height:36px;display:flex;align-items:center;justify-content:center"><i class="ph-bold ph-x"></i></button>
+    </div>
+    <div class="wh-chart"><svg id="wh-svg"></svg></div>
+    <div class="wh-list" id="wh-list"></div>
+    <div style="display:flex;gap:10px;margin-top:16px">
+      <button class="modal-btn modal-btn-cancel" style="font-size:.8rem" onclick="clearWeightHistory()"><i class="ph-bold ph-trash"></i> Limpar histórico</button>
+      <button class="modal-btn modal-btn-confirm" onclick="closeWhModal()">Fechar</button>
+    </div>
+  </div>
+</div>
 <div class="sync-modal-overlay" id="sync-modal">
-    <div class="sync-modal-box">
-        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:20px;">
-            <div>
-                <h3 style="margin:0; color:var(--text-main); font-size:1.1rem;">
-                    <i class="ph-bold ph-share-network" style="color:var(--primary)"></i> Sincronizar
-                </h3>
-                <p style="margin:4px 0 0; font-size:0.75rem; color:var(--text-dim);">Compartilhe seus treinos entre dispositivos</p>
-            </div>
-            <button onclick="closeSyncModal()" style="background:none; border:none; color:var(--text-dim); font-size:1.5rem; cursor:pointer; padding:4px;">
-                <i class="ph-bold ph-x"></i>
-            </button>
-        </div>
-        <div class="sync-tabs">
-            <button class="sync-tab active" onclick="switchSyncTab('export')" id="stab-export"><i class="ph-bold ph-qr-code"></i> Exportar</button>
-            <button class="sync-tab" onclick="switchSyncTab('import')" id="stab-import"><i class="ph-bold ph-download-simple"></i> Importar</button>
-        </div>
-
-        <!-- EXPORT PANEL -->
-        <div class="sync-panel active" id="spanel-export">
-            <div class="sync-info-row">
-                <i class="ph-bold ph-info"></i>
-                <span>Gera um QR Code ou link com todos os seus treinos para abrir em outro dispositivo.</span>
-            </div>
-            <label class="sync-option">
-                <input type="checkbox" id="opt-weights" checked onchange="rebuildSyncLink()">
-                <div>
-                    <div class="sync-option-label"><i class="ph-bold ph-barbell" style="color:var(--primary)"></i> Incluir pesos salvos</div>
-                    <div class="sync-option-desc">Valores de carga registrados por exercício</div>
-                </div>
-            </label>
-            <label class="sync-option">
-                <input type="checkbox" id="opt-notes" checked onchange="rebuildSyncLink()">
-                <div>
-                    <div class="sync-option-label"><i class="ph-bold ph-note-pencil" style="color:var(--accent)"></i> Incluir anotações</div>
-                    <div class="sync-option-desc">Dicas e observações por exercício</div>
-                </div>
-            </label>
-            <label class="sync-option">
-                <input type="checkbox" id="opt-history" onchange="rebuildSyncLink()">
-                <div>
-                    <div class="sync-option-label"><i class="ph-bold ph-calendar-check" style="color:var(--success)"></i> Incluir histórico de treinos</div>
-                    <div class="sync-option-desc">Frequência dos últimos 30 dias</div>
-                </div>
-            </label>
-            <div style="text-align:center; margin-top:18px;">
-                <div class="qr-wrapper" id="qr-wrapper">
-                    <div class="qr-scan-line"></div>
-                    <div id="qr-canvas"></div>
-                </div>
-                <p style="font-size:0.7rem; color:var(--text-dim); margin:6px 0 14px;">Aponte a câmera do outro dispositivo para este QR Code</p>
-            </div>
-            <div style="font-size:0.72rem; color:var(--text-dim); font-weight:800; text-transform:uppercase; margin-bottom:6px; letter-spacing:0.5px;">Ou copie o link:</div>
-            <div class="link-box" id="sync-link-box" onclick="copySyncLink()">
-                <span class="copy-badge"><i class="ph-bold ph-copy"></i> Copiar</span>
-                <span id="sync-link-text">Gerando link...</span>
-            </div>
-            <p id="copy-feedback" style="font-size:0.75rem; color:var(--success); font-weight:800; text-align:center; margin:8px 0 0; display:none;">
-                <i class="ph-bold ph-check-circle"></i> Link copiado para a área de transferência!
-            </p>
-        </div>
-
-        <!-- IMPORT PANEL -->
-        <div class="sync-panel" id="spanel-import">
-            <div class="sync-info-row">
-                <i class="ph-bold ph-warning" style="color:var(--gold)"></i>
-                <span>Cole o link de sincronização ou escaneie o QR Code. Os dados atuais serão <strong style="color:var(--danger)">substituídos</strong>.</span>
-            </div>
-            <label class="modal-label" style="margin-bottom:8px;">Cole o link de sincronização aqui:</label>
-            <textarea class="import-paste-area" id="import-paste" placeholder="Cole o link completo aqui...&#10;&#10;Ex: training-pro://data?v=1&d=eJy..."></textarea>
-            <div style="display:flex; gap:10px; margin-top:16px;">
-                <button class="modal-btn modal-btn-cancel" onclick="closeSyncModal()">Cancelar</button>
-                <button class="modal-btn modal-btn-confirm" onclick="importFromLink()" style="display:flex; align-items:center; justify-content:center; gap:8px;">
-                    <i class="ph-bold ph-download-simple"></i> Importar
-                </button>
-            </div>
-            <div class="success-icon" id="import-success-icon">
-                <i class="ph-bold ph-check-circle"></i>
-                <p style="color:var(--success); font-weight:800; font-size:0.9rem; margin:8px 0 0;">Treino importado com sucesso!</p>
-            </div>
-        </div>
+  <div class="sync-modal-box">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+      <div>
+        <h3 style="margin:0;color:var(--txt);font-size:1.1rem;font-family:'Syne',sans-serif"><i class="ph-bold ph-share-network" style="color:var(--primary)"></i> Sincronizar</h3>
+        <p style="margin:4px 0 0;font-size:.74rem;color:var(--txt-dim)">Compartilhe seus treinos entre dispositivos</p>
+      </div>
+      <button onclick="closeSyncModal()" style="background:rgba(255,255,255,.07);border:none;color:var(--txt-dim);font-size:1.3rem;cursor:pointer;padding:6px;transition:background .2s;border-radius:50%;width:36px;height:36px;display:flex;align-items:center;justify-content:center"><i class="ph-bold ph-x"></i></button>
     </div>
+    <div class="sync-tabs">
+      <button class="sync-tab active" onclick="switchSyncTab('export')" id="stab-export"><i class="ph-bold ph-qr-code"></i> Exportar</button>
+      <button class="sync-tab" onclick="switchSyncTab('import')" id="stab-import"><i class="ph-bold ph-download-simple"></i> Importar</button>
+    </div>
+    <div class="sync-panel active" id="spanel-export">
+      <div class="sync-info-row"><i class="ph-bold ph-info"></i><span>Gera um QR Code ou link com todos os seus treinos para abrir em outro dispositivo.</span></div>
+      <label class="sync-option"><input type="checkbox" id="opt-weights" checked onchange="rebuildSyncLink()"><div><div class="sync-option-label"><i class="ph-bold ph-barbell" style="color:var(--primary)"></i> Incluir pesos salvos</div><div class="sync-option-desc">Valores de carga registrados por exercício</div></div></label>
+      <label class="sync-option"><input type="checkbox" id="opt-notes" checked onchange="rebuildSyncLink()"><div><div class="sync-option-label"><i class="ph-bold ph-note-pencil" style="color:var(--accent)"></i> Incluir anotações</div><div class="sync-option-desc">Dicas e observações por exercício</div></div></label>
+      <label class="sync-option"><input type="checkbox" id="opt-history" onchange="rebuildSyncLink()"><div><div class="sync-option-label"><i class="ph-bold ph-calendar-check" style="color:var(--success)"></i> Incluir histórico</div><div class="sync-option-desc">Frequência dos últimos 30 dias</div></div></label>
+      <div style="text-align:center;margin-top:18px">
+        <div class="qr-wrapper"><div class="qr-scan-line"></div><div id="qr-canvas"></div></div>
+        <p style="font-size:.68rem;color:var(--txt-dim);margin:6px 0 14px">Aponte a câmera do outro dispositivo para este QR Code</p>
+      </div>
+      <div style="font-size:.7rem;color:var(--txt-dim);font-weight:800;text-transform:uppercase;margin-bottom:6px;letter-spacing:.5px">Ou copie o link:</div>
+      <div class="link-box" id="sync-link-box" onclick="copySyncLink()"><span class="copy-badge"><i class="ph-bold ph-copy"></i> Copiar</span><span id="sync-link-text">Gerando link...</span></div>
+      <p id="copy-feedback" style="font-size:.74rem;color:var(--success);font-weight:800;text-align:center;margin:8px 0 0;display:none"><i class="ph-bold ph-check-circle"></i> Link copiado!</p>
+    </div>
+    <div class="sync-panel" id="spanel-import">
+      <div class="sync-info-row"><i class="ph-bold ph-warning" style="color:var(--gold)"></i><span>Cole o link. Os dados atuais serão <strong style="color:var(--danger)">substituídos</strong>.</span></div>
+      <label class="modal-label" style="margin-bottom:8px">Cole o link de sincronização:</label>
+      <textarea class="import-paste-area" id="import-paste" placeholder="Cole o link completo aqui..."></textarea>
+      <div style="display:flex;gap:10px;margin-top:16px">
+        <button class="modal-btn modal-btn-cancel" onclick="closeSyncModal()">Cancelar</button>
+        <button class="modal-btn modal-btn-confirm" onclick="importFromLink()" style="display:flex;align-items:center;justify-content:center;gap:8px"><i class="ph-bold ph-download-simple"></i> Importar</button>
+      </div>
+      <div class="success-icon" id="import-success-icon"><i class="ph-bold ph-check-circle"></i><p style="color:var(--success);font-weight:800;font-size:.9rem;margin:8px 0 0">Importado com sucesso!</p></div>
+    </div>
+  </div>
 </div>
 
-<!-- ===== MODAIS CUSTOMIZADOS ===== -->
+<!-- MODAIS -->
 <div class="modal-overlay" id="input-modal">
-    <div class="modal-content">
-        <h3 id="input-modal-title" style="margin-top:0; color:var(--text-main);"></h3>
-        <input type="text" id="input-modal-field" class="modal-input" placeholder="">
-        <div style="display:flex; gap:10px; margin-top:16px;">
-            <button class="modal-btn modal-btn-cancel" onclick="closeInputModal()">Cancelar</button>
-            <button class="modal-btn modal-btn-confirm" id="input-modal-confirm">Confirmar</button>
-        </div>
+  <div class="modal-content">
+    <h3 id="input-modal-title" style="margin-top:0;color:var(--txt);font-family:'Syne',sans-serif"></h3>
+    <input type="text" id="input-modal-field" class="modal-input">
+    <div style="display:flex;gap:10px;margin-top:16px">
+      <button class="modal-btn modal-btn-cancel" onclick="closeInputModal()">Cancelar</button>
+      <button class="modal-btn modal-btn-confirm" id="input-modal-confirm">Confirmar</button>
     </div>
+  </div>
 </div>
-
 <div class="modal-overlay" id="confirm-modal">
-    <div class="modal-content">
-        <div style="font-size:2.5rem; margin-bottom:10px;">⚠️</div>
-        <h3 id="confirm-modal-title" style="margin-top:0; color:var(--text-main);"></h3>
-        <p id="confirm-modal-msg" style="color:var(--text-dim); font-size:0.9rem; margin:0 0 20px;"></p>
-        <div style="display:flex; gap:10px;">
-            <button class="modal-btn modal-btn-cancel" onclick="closeConfirmModal()">Cancelar</button>
-            <button class="modal-btn modal-btn-danger" id="confirm-modal-ok">Confirmar</button>
-        </div>
+  <div class="modal-content">
+    <div style="font-size:2.8rem;margin-bottom:10px">⚠️</div>
+    <h3 id="confirm-modal-title" style="margin-top:0;color:var(--txt);font-family:'Syne',sans-serif"></h3>
+    <p id="confirm-modal-msg" style="color:var(--txt-dim);font-size:.88rem;margin:0 0 20px"></p>
+    <div style="display:flex;gap:10px">
+      <button class="modal-btn modal-btn-cancel" onclick="closeConfirmModal()">Cancelar</button>
+      <button class="modal-btn modal-btn-danger" id="confirm-modal-ok">Confirmar</button>
     </div>
+  </div>
 </div>
-
 <div class="modal-overlay" id="exercise-modal">
-    <div class="modal-content" style="width:400px; text-align:left;">
-        <h3 id="exercise-modal-title" style="margin-top:0; color:var(--text-main); text-align:center;"></h3>
-        <div style="display:flex; flex-direction:column; gap:14px;">
-            <div>
-                <label class="modal-label">Nome do exercício</label>
-                <input type="text" id="ex-modal-name" class="modal-input" placeholder="Ex: Supino reto barra">
-            </div>
-            <div>
-                <label class="modal-label">Séries / Reps</label>
-                <input type="text" id="ex-modal-reps" class="modal-input" placeholder="Ex: 3x12 ou 4x8-10">
-            </div>
-            <div>
-                <label class="modal-label">Pausa</label>
-                <input type="text" id="ex-modal-time" class="modal-input" placeholder="Ex: 1m30 ou Nec.">
-            </div>
-            <div>
-                <label class="modal-label">Link YouTube <span style="font-weight:400; opacity:0.5;">(opcional)</span></label>
-                <input type="text" id="ex-modal-link" class="modal-input" placeholder="https://youtube.com/...">
-            </div>
-        </div>
-        <div style="display:flex; gap:10px; margin-top:20px;">
-            <button class="modal-btn modal-btn-cancel" onclick="closeExModal()">Cancelar</button>
-            <button class="modal-btn modal-btn-confirm" id="ex-modal-confirm">Salvar</button>
-        </div>
+  <div class="modal-content" style="width:400px;text-align:left">
+    <h3 id="exercise-modal-title" style="margin-top:0;color:var(--txt);text-align:center;font-family:'Syne',sans-serif"></h3>
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <div><label class="modal-label">Nome do exercício</label><input type="text" id="ex-modal-name" class="modal-input" placeholder="Ex: Supino reto barra"></div>
+      <div><label class="modal-label">Séries / Reps</label><input type="text" id="ex-modal-reps" class="modal-input" placeholder="Ex: 3x12 ou 4x8-10"></div>
+      <div><label class="modal-label">Pausa</label><input type="text" id="ex-modal-time" class="modal-input" placeholder="Ex: 1m30 ou Nec."></div>
+      <div><label class="modal-label">Link YouTube <span style="font-weight:400;opacity:.5">(opcional)</span></label><input type="text" id="ex-modal-link" class="modal-input" placeholder="https://youtube.com/..."></div>
     </div>
+    <div style="display:flex;gap:10px;margin-top:20px">
+      <button class="modal-btn modal-btn-cancel" onclick="closeExModal()">Cancelar</button>
+      <button class="modal-btn modal-btn-confirm" id="ex-modal-confirm">Salvar</button>
+    </div>
+  </div>
 </div>
-
 <div class="modal-overlay" id="history-modal">
-    <div class="modal-content">
-        <h3 style="margin-top:0; color:var(--text-main); display:flex; align-items:center; justify-content:center; gap:8px;">
-            <i class="ph-bold ph-calendar-check"></i> Atividade (30 dias)
-        </h3>
-        <p style="font-size:0.75rem; color:var(--text-dim); margin-top:-10px;">Dias em verde indicam treinos concluídos.</p>
-        <div class="heatmap-grid" id="heatmap-grid"></div>
-        <button onclick="document.getElementById('history-modal').style.display='none'" style="width:100%; padding:12px; border-radius:10px; background:var(--primary); color:white; border:none; font-weight:bold; cursor:pointer;">Fechar</button>
-    </div>
+  <div class="modal-content">
+    <h3 style="margin-top:0;color:var(--txt);display:flex;align-items:center;justify-content:center;gap:8px;font-family:'Syne',sans-serif"><i class="ph-bold ph-calendar-check"></i> Atividade (28 dias)</h3>
+    <p style="font-size:.74rem;color:var(--txt-dim);margin-top:-8px">Dias em verde = treino concluído</p>
+    <div class="heatmap-grid" id="heatmap-grid"></div>
+    <button onclick="document.getElementById('history-modal').style.display='none'" style="width:100%;padding:13px;border-radius:var(--r-sm);background:linear-gradient(135deg,var(--primary),#60a5fa);color:white;border:none;font-weight:700;cursor:pointer;font-family:'Space Grotesk',sans-serif;font-size:.9rem;transition:transform .2s,box-shadow .2s" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 8px 24px rgba(56,189,248,.4)'" onmouseout="this.style.transform='';this.style.boxShadow=''">Fechar</button>
+  </div>
 </div>
 
 <script>
-// ============================================================
-//  DEFAULT DATA
-// ============================================================
-const defaultWorkouts = {
-    treinoA: { label: "A", title: "Peito e Tríceps", exercises: [
-        {id: 'a1', name: "Supino inclinado halteres", reps: "2x12 + 2x8",       time: "1m30"},
-        {id: 'a2', name: "Supino reto barra",         reps: "4x12",             time: "1m30"},
-        {id: 'a3', name: "Voador",                    reps: "3x12 (2s iso)",    time: "1m30"},
-        {id: 'a4', name: "Crossover baixo",           reps: "3x12",             time: "1m30"},
-        {id: 'a5', name: "Paralelas",                 reps: "3x máx",           time: "1m30"},
-        {id: 'a6', name: "Elevação lateral sentado",  reps: "3x12 + 1 drop",   time: "1m30"},
-        {id: 'a7', name: "Tríceps testa halter",      reps: "3x12",             time: "1m30"},
-        {id: 'a8', name: "Tríceps corda",             reps: "2x12 + 1x10 drop", time: "1m30"}
-    ]},
-    treinoB: { label: "B", title: "Costas e Bíceps", exercises: [
-        {id: 'b1', name: "Barra fixa pronada",        reps: "40 reps totais",   time: "1m30"},
-        {id: 'b2', name: "Remada curvada",            reps: "2x12 + 2x8",       time: "Nec."},
-        {id: 'b3', name: "Puxador triângulo",         reps: "3x15",             time: "1m"},
-        {id: 'b4', name: "Pulldown",                  reps: "4x12",             time: "1m30"},
-        {id: 'b5', name: "Remada baixa aberta",       reps: "3x10 + drop",      time: "1m30"},
-        {id: 'b6', name: "Rosca alternada",           reps: "3x12",             time: "1m"},
-        {id: 'b7', name: "Rosca Scott máquina",       reps: "3x12",             time: "1m30"},
-        {id: 'b8', name: "Encolhimento ombros",       reps: "3x15",             time: "Nec."}
-    ]},
-    treinoC: { label: "C", title: "Perna Anterior", exercises: [
-        {id: 'c1', name: "Cadeira adutora",           reps: "3x15",             time: "1m30"},
-        {id: 'c2', name: "Agachamento hack",          reps: "3x10-12",          time: "1m30"},
-        {id: 'c3', name: "Leg 45°",                   reps: "2x12 + 2x8",       time: "Nec."},
-        {id: 'c4', name: "Cadeira extensora",         reps: "3x15 + drop",      time: "1m30"},
-        {id: 'c5', name: "Stiff",                     reps: "4x12",             time: "1m30"},
-        {id: 'c6', name: "Panturrilha em pé",         reps: "3x falha",         time: "1m30"},
-        {id: 'c7', name: "Panturrilha sentada",       reps: "3x falha",         time: "1m30"}
-    ]},
-    treinoD: { label: "D", title: "Ombros e Braços", exercises: [
-        {id: 'd1', name: "Desenvolvimento halteres",  reps: "2x12 + 2x8",       time: "1m30"},
-        {id: 'd2', name: "Elevação lateral halter",   reps: "3x15 + drop",      time: "Nec."},
-        {id: 'd3', name: "Elevação lateral máquina",  reps: "3x12",             time: "1m30"},
-        {id: 'd4', name: "Crucifixo inverso",         reps: "3x15",             time: "1m30"},
-        {id: 'd5', name: "Face pull",                 reps: "3x15",             time: "1m30"},
-        {id: 'd6', name: "Tríceps francês polia",     reps: "3x12",             time: "1m30"},
-        {id: 'd7', name: "Rosca martelo",             reps: "3x12",             time: "1m30"}
-    ]},
-    treinoE: { label: "E", title: "Perna Posterior", exercises: [
-        {id: 'e1', name: "Levantamento terra",        reps: "3x6-8",            time: "Nec."},
-        {id: 'e2', name: "Mesa flexora",              reps: "4x12",             time: "1m30"},
-        {id: 'e3', name: "Elevação pélvica",          reps: "3x12",             time: "Nec."},
-        {id: 'e4', name: "Cadeira abdutora",          reps: "3x13",             time: "1m"},
-        {id: 'e5', name: "Afundo halteres",           reps: "3x12",             time: "1m"}
-    ]}
+const defaultWorkouts={
+  treinoA:{label:"A",title:"Peito e Tríceps",exercises:[
+    {id:'a1',name:"Supino inclinado halteres",reps:"2x12 + 2x8",time:"1m30"},
+    {id:'a2',name:"Supino reto barra",reps:"4x12",time:"1m30"},
+    {id:'a3',name:"Voador",reps:"3x12 (2s iso)",time:"1m30"},
+    {id:'a4',name:"Crossover baixo",reps:"3x12",time:"1m30"},
+    {id:'a5',name:"Paralelas",reps:"3x máx",time:"1m30"},
+    {id:'a6',name:"Elevação lateral sentado",reps:"3x12 + 1 drop",time:"1m30"},
+    {id:'a7',name:"Tríceps testa halter",reps:"3x12",time:"1m30"},
+    {id:'a8',name:"Tríceps corda",reps:"2x12 + 1x10 drop",time:"1m30"}
+  ]},
+  treinoB:{label:"B",title:"Costas e Bíceps",exercises:[
+    {id:'b1',name:"Barra fixa pronada",reps:"40 reps totais",time:"1m30"},
+    {id:'b2',name:"Remada curvada",reps:"2x12 + 2x8",time:"Nec."},
+    {id:'b3',name:"Puxador triângulo",reps:"3x15",time:"1m"},
+    {id:'b4',name:"Pulldown",reps:"4x12",time:"1m30"},
+    {id:'b5',name:"Remada baixa aberta",reps:"3x10 + drop",time:"1m30"},
+    {id:'b6',name:"Rosca alternada",reps:"3x12",time:"1m"},
+    {id:'b7',name:"Rosca Scott máquina",reps:"3x12",time:"1m30"},
+    {id:'b8',name:"Encolhimento ombros",reps:"3x15",time:"Nec."}
+  ]},
+  treinoC:{label:"C",title:"Perna Anterior",exercises:[
+    {id:'c1',name:"Cadeira adutora",reps:"3x15",time:"1m30"},
+    {id:'c2',name:"Agachamento hack",reps:"3x10-12",time:"1m30"},
+    {id:'c3',name:"Leg 45°",reps:"2x12 + 2x8",time:"Nec."},
+    {id:'c4',name:"Cadeira extensora",reps:"3x15 + drop",time:"1m30"},
+    {id:'c5',name:"Stiff",reps:"4x12",time:"1m30"},
+    {id:'c6',name:"Panturrilha em pé",reps:"3x falha",time:"1m30"},
+    {id:'c7',name:"Panturrilha sentada",reps:"3x falha",time:"1m30"}
+  ]},
+  treinoD:{label:"D",title:"Ombros e Braços",exercises:[
+    {id:'d1',name:"Desenvolvimento halteres",reps:"2x12 + 2x8",time:"1m30"},
+    {id:'d2',name:"Elevação lateral halter",reps:"3x15 + drop",time:"Nec."},
+    {id:'d3',name:"Elevação lateral máquina",reps:"3x12",time:"1m30"},
+    {id:'d4',name:"Crucifixo inverso",reps:"3x15",time:"1m30"},
+    {id:'d5',name:"Face pull",reps:"3x15",time:"1m30"},
+    {id:'d6',name:"Tríceps francês polia",reps:"3x12",time:"1m30"},
+    {id:'d7',name:"Rosca martelo",reps:"3x12",time:"1m30"}
+  ]},
+  treinoE:{label:"E",title:"Perna Posterior",exercises:[
+    {id:'e1',name:"Levantamento terra",reps:"3x6-8",time:"Nec."},
+    {id:'e2',name:"Mesa flexora",reps:"4x12",time:"1m30"},
+    {id:'e3',name:"Elevação pélvica",reps:"3x12",time:"Nec."},
+    {id:'e4',name:"Cadeira abdutora",reps:"3x13",time:"1m"},
+    {id:'e5',name:"Afundo halteres",reps:"3x12",time:"1m"}
+  ]}
 };
 
-let workoutData = {};
-let currentTabKey = 'treinoA';
-let _currentSyncLink = '';
+let workoutData={},currentTabKey='treinoA',_currentSyncLink='';
 
-// ============================================================
-//  HELPERS: localStorage persistência e limpeza
-// ============================================================
-function saveActiveTab(key)    { localStorage.setItem('app_active_tab', key); }
-function loadActiveTab(keys)   {
-    const s = localStorage.getItem('app_active_tab');
-    return (s && keys.includes(s)) ? s : keys[0];
+/* ✅ OPT 5: Cache de localStorage em memória.
+   Evita N leituras de I/O síncrono por render — o localStorage é lido apenas
+   uma vez por chave e o resultado fica em _lsCache até ser invalidado por uma
+   escrita. setCached() mantém cache e disco sincronizados. */
+const _lsCache={};
+function getCached(key){
+  if(!(key in _lsCache)) _lsCache[key]=localStorage.getItem(key);
+  return _lsCache[key];
+}
+function setCached(key,val){
+  _lsCache[key]=val;
+  localStorage.setItem(key,val);
+}
+function delCached(key){
+  delete _lsCache[key];
+  localStorage.removeItem(key);
 }
 
-function purgeExerciseData(exId) {
-    ['check_','weight_','note_','pr_'].forEach(p => localStorage.removeItem(p + exId));
+const saveActiveTab=k=>setCached('app_active_tab',k);
+const loadActiveTab=keys=>{const s=getCached('app_active_tab');return(s&&keys.includes(s))?s:keys[0]};
+const purgeEx=id=>['check_','weight_','note_','pr_','wh_'].forEach(p=>delCached(p+id));
+const purgeTab=key=>workoutData[key]?.exercises.forEach(ex=>purgeEx(ex.id));
+
+/* ✅ OPT 6: Debounce no saveData — agrupa múltiplas escritas consecutivas
+   (ex: digitar no campo de peso dispara onChange várias vezes) em uma única
+   escrita no localStorage após 300ms de silêncio. */
+let _saveTimer;
+function saveData(){
+  clearTimeout(_saveTimer);
+  _saveTimer=setTimeout(()=>localStorage.setItem('app_workout_data',JSON.stringify(workoutData)),300);
 }
-function purgeTabData(tabKey) {
-    if (workoutData[tabKey]) workoutData[tabKey].exercises.forEach(ex => purgeExerciseData(ex.id));
+/* Versão imediata usada em operações críticas (delete, import, sync) */
+function saveDataNow(){
+  clearTimeout(_saveTimer);
+  localStorage.setItem('app_workout_data',JSON.stringify(workoutData));
 }
 
-// ============================================================
-//  INIT
-// ============================================================
-function init() {
-    const theme = localStorage.getItem('app_theme') || 'dark';
-    document.body.setAttribute('data-theme', theme);
-    const saved = localStorage.getItem('app_workout_data');
-    workoutData = saved ? JSON.parse(saved) : defaultWorkouts;
-    const keys = Object.keys(workoutData);
-    currentTabKey = loadActiveTab(keys);
-    checkAutoReset();
-    checkSyncOnLoad();
-    renderTabs();
-    renderAll();
+function init(){
+  /* Lê tema e dados principais via getCached para popular o cache logo no início.
+     Todas as leituras subsequentes de chaves simples virão do _lsCache em memória. */
+  const saved=getCached('app_workout_data');
+  workoutData=saved?JSON.parse(saved):defaultWorkouts;
+  const keys=Object.keys(workoutData);
+  currentTabKey=loadActiveTab(keys);
+  applyStoredSettings(); // aplica tema, acento e unidade antes de renderizar
+  checkAutoReset();checkSyncOnLoad();renderTabs();renderAll();initMagneticFAB();
 }
 
-// ============================================================
-//  SYNC: auto-detect link no hash da URL
-// ============================================================
-function checkSyncOnLoad() {
-    try {
-        const hash = window.location.hash;
-        if (!hash.startsWith('#sync=')) return;
-        const encoded = hash.replace('#sync=', '');
-        if (!encoded) return;
-        history.replaceState(null, '', window.location.pathname);
-        setTimeout(() => {
-            openSyncModal();
-            switchSyncTab('import');
-            document.getElementById('import-paste').value = 'training-pro://data?v=1&d=' + encoded;
-            showConfirmSyncImport(encoded);
-        }, 400);
-    } catch(e) {}
+let _toastTimer;
+function showToast(msg,dur=2400){
+  const t=document.getElementById('toast');
+  t.innerHTML=msg;t.style.display='block';
+  t.style.animation='none';void t.offsetWidth;
+  t.style.animation='toastIn .35s cubic-bezier(.34,1.56,.64,1) both';
+  clearTimeout(_toastTimer);
+  _toastTimer=setTimeout(()=>{t.style.opacity='0';setTimeout(()=>{t.style.display='none';t.style.opacity=''},300)},dur);
 }
 
-function showConfirmSyncImport(encoded) {
-    openConfirmModal(
-        'Importar treino sincronizado?',
-        'Um link de sincronização foi detectado. Deseja importar os treinos? Os dados atuais serão substituídos.',
-        () => { doImportFromEncoded(encoded); closeSyncModal(); }
-    );
+function burstConfetti(x,y){
+  const cols=['#38bdf8','#f472b6','#34d399','#fbbf24','#a78bfa'];
+  for(let i=0;i<16;i++){
+    const el=document.createElement('div');
+    el.className='confetti-piece';
+    const sz=6+Math.random()*9;
+    el.style.cssText=`left:${x}px;top:${y}px;background:${cols[i%cols.length]};width:${sz}px;height:${sz}px;border-radius:${Math.random()>.5?'50%':'3px'};margin-left:${(Math.random()-.5)*70}px;animation-duration:${.5+Math.random()*.45}s;animation-delay:${Math.random()*.12}s`;
+    document.body.appendChild(el);
+    setTimeout(()=>el.remove(),1000);
+  }
 }
 
-// ============================================================
-//  SYNC: build payload e link
-// ============================================================
-function buildSyncPayload() {
-    const inclWeights = document.getElementById('opt-weights')?.checked ?? true;
-    const inclNotes   = document.getElementById('opt-notes')?.checked   ?? true;
-    const inclHistory = document.getElementById('opt-history')?.checked ?? false;
-
-    const payload = { w: workoutData };
-    if (inclWeights || inclNotes) {
-        payload.ls = {};
-        for (let i = 0; i < localStorage.length; i++) {
-            const k = localStorage.key(i);
-            if (inclWeights && (k.startsWith('weight_') || k.startsWith('pr_'))) payload.ls[k] = localStorage.getItem(k);
-            if (inclNotes   && k.startsWith('note_'))                             payload.ls[k] = localStorage.getItem(k);
-        }
-    }
-    if (inclHistory) {
-        const h = localStorage.getItem('app_history');
-        if (h) payload.h = JSON.parse(h);
-    }
-    return btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
+function getSuggestedTab(){
+  const keys=Object.keys(workoutData);if(!keys.length)return null;
+  const lk=getCached('app_last_tab_used'),ld=getCached('app_last_tab_date');
+  const d=new Date(),today=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  if(ld===today&&lk&&keys.includes(lk))return lk;
+  if(!lk||!keys.includes(lk))return keys[0];
+  return keys[(keys.indexOf(lk)+1)%keys.length];
+}
+function registerTabUsage(k){
+  const d=new Date(),s=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  setCached('app_last_tab_used',k);setCached('app_last_tab_date',s);
 }
 
-function buildSyncLink() {
-    const encoded = buildSyncPayload();
-    const base    = window.location.href.split('#')[0].split('?')[0];
-    return { link: base + '#sync=' + encoded, encoded };
+const STOP=new Set(['de','e','o','a','os','as','do','da','dos','das','em','no','na','um','uma']);
+function abbrev(name){
+  const t=name.trim();if(t.length<=6)return t.toUpperCase();
+  const rel=t.split(/\s+/).filter(w=>!STOP.has(w.toLowerCase()));
+  if(!rel.length)return t.substring(0,4).toUpperCase()+'.';
+  if(rel.length===1)return rel[0].substring(0,4).toUpperCase()+'.';
+  if(rel.length===2)return rel[0][0].toUpperCase()+'&'+rel[1][0].toUpperCase();
+  return rel.map(w=>w[0].toUpperCase()).join('');
 }
 
-function rebuildSyncLink() {
-    if (document.getElementById('sync-modal').style.display !== 'flex') return;
-    const { link } = buildSyncLink();
-    _currentSyncLink = link;
-    document.getElementById('sync-link-text').textContent = link;
-
-    const qrEl = document.getElementById('qr-canvas');
-    qrEl.innerHTML = '';
-    try {
-        new QRCode(qrEl, {
-            text: link.length <= 2800 ? link : 'Link muito grande para QR. Use a opção de copiar o link.',
-            width: 200, height: 200,
-            colorDark: '#0f172a', colorLight: '#ffffff',
-            correctLevel: QRCode.CorrectLevel.M
-        });
-    } catch(e) {
-        qrEl.innerHTML = '<p style="font-size:0.75rem; color:#64748b; text-align:center; padding:10px;">Link muito grande para QR.<br>Use a opção de copiar o link.</p>';
-    }
+function addRipple(btn,e){
+  const r=btn.getBoundingClientRect(),el=document.createElement('span'),size=Math.max(r.width,r.height);
+  el.className='ripple-el';el.style.cssText=`width:${size}px;height:${size}px;left:${e.clientX-r.left-size/2}px;top:${e.clientY-r.top-size/2}px`;
+  btn.appendChild(el);setTimeout(()=>el.remove(),500);
 }
 
-// ============================================================
-//  SYNC: open / close / tabs
-// ============================================================
-function openSyncModal() {
-    closeFabMobile();
-    document.getElementById('sync-modal').style.display = 'flex';
-    switchSyncTab('export');
-    setTimeout(rebuildSyncLink, 80);
+function renderTabs(){
+  const sug=getSuggestedTab();
+  document.getElementById('tabs-list').innerHTML=Object.keys(workoutData).map(key=>`
+    <div class="tab-btn-wrapper ${key===sug?'suggested':''}">
+      <button class="btn-tab-rename" onclick="renameTab('${key}')"><i class="ph-bold ph-pencil-simple"></i></button>
+      <button class="btn-tab-manage" onclick="deleteTab('${key}')"><i class="ph-bold ph-x"></i></button>
+      <button class="tab-btn ${key===currentTabKey?'active':''}" onclick="showWorkout('${key}',event)" ondblclick="renameTab('${key}')" oncontextmenu="renameTab('${key}');return false" title="${workoutData[key].label}">
+        ${abbrev(workoutData[key].label)}
+      </button>
+      <span class="tab-suggested-dot"></span>
+    </div>`).join('');
 }
-function closeSyncModal() {
-    document.getElementById('sync-modal').style.display = 'none';
-    document.getElementById('import-paste').value = '';
-    document.getElementById('import-success-icon').style.display = 'none';
-    document.getElementById('copy-feedback').style.display = 'none';
-}
-function switchSyncTab(tab) {
-    document.querySelectorAll('.sync-tab').forEach(b => b.classList.remove('active'));
-    document.querySelectorAll('.sync-panel').forEach(p => p.classList.remove('active'));
-    document.getElementById('stab-' + tab).classList.add('active');
-    document.getElementById('spanel-' + tab).classList.add('active');
-    if (tab === 'export') setTimeout(rebuildSyncLink, 80);
-}
-document.getElementById('sync-modal').addEventListener('click', function(e) { if (e.target === this) closeSyncModal(); });
 
-// ============================================================
-//  SYNC: copiar link
-// ============================================================
-function copySyncLink() {
-    if (!_currentSyncLink) return;
-    navigator.clipboard.writeText(_currentSyncLink).then(() => {
-        const fb = document.getElementById('copy-feedback');
-        fb.style.display = 'block';
-        setTimeout(() => { fb.style.display = 'none'; }, 3000);
-    }).catch(() => {
-        const el = document.getElementById('sync-link-text');
-        const r = document.createRange();
-        r.selectNodeContents(el);
-        window.getSelection().removeAllRanges();
-        window.getSelection().addRange(r);
+function renderAll(){
+  const container=document.getElementById('main-container');
+  const data=workoutData[currentTabKey];if(!data)return;
+  let html=`<h2 style="animation:fadeUp .35s ease both">${data.title} <i class="ph-bold ph-pencil-simple" onclick="editTitle()" style="cursor:pointer;opacity:.35;font-size:14px;transition:opacity .2s" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='.35'"></i></h2>`;
+  if(!data.exercises.length){
+    html+=`<div class="empty-state"><i class="ph-bold ph-barbell"></i><p>Nenhum exercício cadastrado.</p></div>`;
+  }else{
+    data.exercises.forEach((ex,i)=>{
+      const chk=getCached('check_'+ex.id)==='true';
+      const wt=getCached('weight_'+ex.id)||'';
+      const note=getCached('note_'+ex.id)||'';
+      const prN=parseFloat(getCached('pr_'+ex.id))||0;
+      const cur=parseFloat(wt.replace(',','.').replace(/[^0-9.]/g,''));
+      const isPR=!isNaN(cur)&&cur>=prN&&prN>0;
+      html+=`
+      <div class="exercise-card ${chk?'completed':''}" id="card_${ex.id}" style="animation-delay:${i*60}ms"
+           draggable="false"
+           data-id="${ex.id}">
+        <div class="shine"></div>
+        <button class="btn-remove" onclick="removeEx('${currentTabKey}','${ex.id}')"><i class="ph-bold ph-x"></i></button>
+        <button class="btn-edit-ex" onclick="editEx('${currentTabKey}','${ex.id}')"><i class="ph-bold ph-pencil-simple"></i></button>
+        <div class="drag-handle" title="Arrastar para reordenar"><i class="ph-bold ph-dots-six-vertical"></i></div>
+        <label class="custom-checkbox">
+          <input type="checkbox" onchange="toggleCheck('${ex.id}',this,event)" ${chk?'checked':''}>
+          <span class="checkmark"></span>
+        </label>
+        <div style="flex-grow:1;width:100%">
+          <span class="ex-name">
+            ${ex.name}
+            ${ex.link?`<a href="${ex.link}" target="_blank" style="color:var(--primary);display:inline-flex;transition:transform .2s" onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform=''"><i class="ph-bold ph-youtube-logo"></i></a>`:''}
+            <i class="ph-bold ph-note-pencil" onclick="toggleNote('${ex.id}')" style="cursor:pointer;opacity:.3;font-size:1rem;transition:opacity .2s" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='.3'"></i>
+          </span>
+          ${note?`<div class="exercise-note-display" onclick="toggleNote('${ex.id}')">${note.replace(/\n/g,'<br>')}</div>`:''}
+          <textarea class="exercise-note" id="note_${ex.id}" onchange="saveNote('${ex.id}',this.value)" placeholder="Dicas (ex: banco altura 3)...">${note}</textarea>
+          <div style="display:flex;gap:20px;margin-top:12px;flex-wrap:wrap;align-items:flex-end">
+            <div><span class="info-label">Séries</span><br><span class="info-value">${ex.reps}</span></div>
+            <div>
+              <span class="info-label" style="${isPR?'color:var(--gold)':''}">Peso ${isPR?'<i class="ph-fill ph-trophy" style="color:var(--gold)"></i>':''}</span><br>
+              <div style="display:flex;align-items:center;gap:6px">
+                <input type="text" id="weight_${ex.id}" class="weight-input ${isPR?'pr-active':''}" value="${wt}" onchange="saveWeight('${ex.id}',this.value)" placeholder="0${getWeightUnit()}">
+                <i class="ph-bold ph-chart-line-up" onclick="openWhModal('${ex.id}','${ex.name.replace(/'/g,"\\'")}')" title="Ver histórico de cargas" style="cursor:pointer;color:var(--txt-dim);font-size:1rem;transition:color .2s" onmouseover="this.style.color='var(--primary)'" onmouseout="this.style.color='var(--txt-dim)'"></i>
+              </div>
+            </div>
+            <div><span class="info-label">Pausa</span><br>
+              <span class="info-value ${ex.time!=='Nec.'?'timer-trigger':''}" onclick="startTimer('${ex.time}')">${ex.time}</span>
+            </div>
+          </div>
+        </div>
+      </div>`;
     });
+  }
+  container.innerHTML=html;updateProgressBar();initDragDrop();
 }
 
-// ============================================================
-//  SYNC: importar pelo link colado
-// ============================================================
-function importFromLink() {
-    const raw = document.getElementById('import-paste').value.trim();
-    if (!raw) { document.getElementById('import-paste').focus(); return; }
-    let encoded = null;
-    if      (raw.includes('#sync='))             encoded = raw.split('#sync=')[1];
-    else if (raw.includes('training-pro://data?')) { const m = raw.match(/[?&]d=([^&]+)/); if (m) encoded = m[1]; }
-    else                                          encoded = raw;
-    if (!encoded) { alert('Formato de link inválido. Verifique e tente novamente.'); return; }
-    doImportFromEncoded(encoded);
+function showWorkout(key,e){
+  if(e){const btn=e.currentTarget;addRipple(btn,e)}
+  currentTabKey=key;saveActiveTab(key);renderTabs();renderAll();
+}
+function addTab(){openInputModal('Nova aba de treino','Ex: Pernas, Glúteos…','',(n)=>{if(!n.trim())return;const id='treino'+Date.now();workoutData[id]={label:n.trim(),title:n.trim(),exercises:[]};saveData();currentTabKey=id;saveActiveTab(id);renderTabs();renderAll()})}
+function renameTab(key){openInputModal('Renomear aba','Novo nome',workoutData[key].label,(n)=>{if(!n.trim())return;workoutData[key].label=n.trim();saveData();renderTabs()})}
+function deleteTab(key){
+  if(Object.keys(workoutData).length<=1){openConfirmModal('Ação não permitida','Mantenha ao menos um treino.',null,true);return}
+  openConfirmModal(`Excluir aba "${workoutData[key].label}"?`,'Todos os exercícios serão removidos.',()=>{purgeTab(key);delete workoutData[key];currentTabKey=Object.keys(workoutData)[0];saveActiveTab(currentTabKey);saveDataNow();renderTabs();renderAll()});
+}
+function editTitle(){openInputModal('Renomear treino','Novo título',workoutData[currentTabKey].title,(t)=>{if(!t.trim())return;workoutData[currentTabKey].title=t;saveData();renderAll()})}
+function editEx(key,id){const ex=workoutData[key].exercises.find(e=>e.id===id);if(ex)openExModal('edit',key,ex)}
+
+function toggleCheck(id,el,event){
+  setCached('check_'+id,String(el.checked));
+  const card=document.getElementById('card_'+id);
+  card.classList.toggle('completed',el.checked);
+  if(el.checked){
+    setCached('app_last_active',String(Date.now()));
+    registerTabUsage(currentTabKey);
+    const d=new Date(),ds=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    const hist=JSON.parse(getCached('app_history')||'{}');
+    hist[ds]=true;setCached('app_history',JSON.stringify(hist));
+    const rect=card.getBoundingClientRect();
+    burstConfetti(rect.left+rect.width/2,rect.top+rect.height/2);
+    showToast('<i class="ph-bold ph-check-circle" style="color:var(--success)"></i> Exercício concluído!');
+    const exes=workoutData[currentTabKey].exercises;
+    const done=exes.filter(ex=>getCached('check_'+ex.id)==='true').length;
+    if(done===exes.length&&exes.length>0)setTimeout(()=>{burstConfetti(window.innerWidth/2,window.innerHeight/3);showToast('🏆 Treino completo! Incrível!',3500)},600);
+  }
+  updateProgressBar();
+}
+function updateProgressBar(){
+  const exes=workoutData[currentTabKey].exercises;
+  const done=exes.filter(ex=>getCached('check_'+ex.id)==='true').length;
+  const pct=exes.length>0?Math.round((done/exes.length)*100):0;
+  document.getElementById('summary-text').innerText=`${done} de ${exes.length} concluídos (${pct}%)`;
+  document.getElementById('summary-bar-fill').style.width=pct+'%';
+}
+function saveWeight(id,val){
+  setCached('weight_'+id,val);
+  const num=parseFloat(val.replace(',','.').replace(/[^0-9.]/g,''));
+  if(!isNaN(num)&&num>0){
+    // Registra no histórico de cargas
+    const histKey='wh_'+id;
+    const wh=JSON.parse(getCached(histKey)||'[]');
+    const today=new Date().toISOString().slice(0,10);
+    // Atualiza ou adiciona entrada do dia atual
+    const todayIdx=wh.findIndex(e=>e.d===today);
+    if(todayIdx>=0) wh[todayIdx].v=num;
+    else wh.push({d:today,v:num});
+    // Mantém só os últimos 60 registros
+    if(wh.length>60) wh.splice(0,wh.length-60);
+    setCached(histKey,JSON.stringify(wh));
+    // Detecta PR
+    const pr=parseFloat(getCached('pr_'+id))||0;
+    if(num>pr){setCached('pr_'+id,String(num));showToast('🏆 Novo recorde pessoal!')}
+  }
+  renderAll();
+}
+function toggleNote(id){
+  const ta=document.getElementById('note_'+id);const op=!ta.classList.contains('show');ta.classList.toggle('show');
+  const d=document.getElementById('card_'+id)?.querySelector('.exercise-note-display');if(d)d.style.display=op?'none':'';
+  if(op)ta.focus();
+}
+function saveNote(id,val){
+  setCached('note_'+id,val);
+  const card=document.getElementById('card_'+id);if(!card)return;
+  const ta=card.querySelector('.exercise-note');let d=card.querySelector('.exercise-note-display');
+  if(val.trim()){if(!d){d=document.createElement('div');d.className='exercise-note-display';d.onclick=()=>toggleNote(id);ta.parentNode.insertBefore(d,ta)}d.innerHTML=val.replace(/\n/g,'<br>');d.style.display=''}
+  else if(d)d.remove();
 }
 
-function doImportFromEncoded(encoded) {
-    try {
-        const payload = JSON.parse(decodeURIComponent(escape(atob(encoded))));
-        if (payload.w)  { workoutData = payload.w; saveData(); }
-        if (payload.ls) Object.keys(payload.ls).forEach(k => localStorage.setItem(k, payload.ls[k]));
-        if (payload.h)  localStorage.setItem('app_history', JSON.stringify(payload.h));
+function toggleFab(){document.getElementById('fab-menu').classList.toggle('show');document.getElementById('fab-btn').classList.toggle('active')}
+function closeFabMobile(){if(window.innerWidth<1024&&document.getElementById('fab-menu').classList.contains('show'))toggleFab()}
+function fabEdit(){
+  document.body.classList.toggle('edit-mode');
+  const isE=document.body.classList.contains('edit-mode');
+  const txt=isE?'<i class="ph-bold ph-check"></i> Sair Edição':'<i class="ph-bold ph-gear"></i> Modo Edição';
+  document.getElementById('edit-fab-text').innerHTML=txt;
+  if(document.getElementById('desktop-edit-btn'))document.getElementById('desktop-edit-btn').innerHTML=txt;
+  closeFabMobile();
+}
+function fabAdd(){closeFabMobile();openExModal('new',null,null)}
+function fabReset(){closeFabMobile();openConfirmModal('Limpar treino de hoje?','Todas as marcações serão apagadas.',()=>{workoutData[currentTabKey].exercises.forEach(ex=>setCached('check_'+ex.id,'false'));renderAll();showToast('Treino limpo ✓')})}
+function removeEx(key,id){workoutData[key].exercises=workoutData[key].exercises.filter(ex=>ex.id!==id);purgeEx(id);saveData();renderAll()}
 
-        const el = document.getElementById('import-success-icon');
-        el.style.display = 'block';
-        el.style.animation = 'none';
-        void el.offsetWidth;
-        el.style.animation = 'successPop 0.4s cubic-bezier(0.34,1.56,0.64,1) forwards';
-
-        setTimeout(() => {
-            closeSyncModal();
-            currentTabKey = Object.keys(workoutData)[0];
-            saveActiveTab(currentTabKey);
-            renderTabs(); renderAll();
-        }, 1800);
-    } catch(e) {
-        alert('Erro ao importar: dados inválidos ou corrompidos.\n\n' + e.message);
-    }
+function initMagneticFAB(){
+  const btn=document.getElementById('fab-btn');if(!btn)return;
+  btn.addEventListener('mousemove',e=>{const r=btn.getBoundingClientRect();btn.style.transform=`translate(${(e.clientX-r.left-r.width/2)*.28}px,${(e.clientY-r.top-r.height/2)*.28}px) scale(1.05)`});
+  btn.addEventListener('mouseleave',()=>{btn.style.transform=''});
 }
 
-// ============================================================
-//  TREINO DO DIA: sugestão de aba
-// ============================================================
-function getSuggestedTab() {
-    const keys = Object.keys(workoutData);
-    if (!keys.length) return null;
-    const lastKey  = localStorage.getItem('app_last_tab_used');
-    const lastDate = localStorage.getItem('app_last_tab_date');
-    const today = new Date();
-    const todayStr = today.getFullYear() + '-' + String(today.getMonth()+1).padStart(2,'0') + '-' + String(today.getDate()).padStart(2,'0');
-    if (lastDate === todayStr && lastKey && keys.includes(lastKey)) return lastKey;
-    if (!lastKey || !keys.includes(lastKey)) return keys[0];
-    const nextIdx = (keys.indexOf(lastKey) + 1) % keys.length;
-    return keys[nextIdx];
+function toggleTheme(){
+  // Mantido para compatibilidade com FAB mobile "Mudar Tema"
+  const current=getCached('app_theme')||'dark';
+  const next=current==='dark'?'light':current==='light'?'auto':'dark';
+  setTheme(next);
 }
 
-function registerTabUsage(tabKey) {
-    const today = new Date();
-    const s = today.getFullYear() + '-' + String(today.getMonth()+1).padStart(2,'0') + '-' + String(today.getDate()).padStart(2,'0');
-    localStorage.setItem('app_last_tab_used', tabKey);
-    localStorage.setItem('app_last_tab_date', s);
-}
+/* ═══════════════════════════════════════════════════════════
+   CONFIGURAÇÕES — Tema, Acento, Unidade, Reset
+   ═══════════════════════════════════════════════════════════ */
 
-// ============================================================
-//  ABREVIAÇÃO DE LABELS
-// ============================================================
-const STOP_WORDS = new Set(['de','e','o','a','os','as','do','da','dos','das','em','no','na','um','uma']);
-function abbreviateLabel(name) {
-    const t = name.trim();
-    if (t.length <= 6) return t.toUpperCase();
-    const words    = t.split(/\s+/);
-    const relevant = words.filter(w => !STOP_WORDS.has(w.toLowerCase()));
-    if (!relevant.length)     return t.substring(0,4).toUpperCase() + '.';
-    if (relevant.length === 1) return relevant[0].substring(0,4).toUpperCase() + '.';
-    if (relevant.length === 2) return relevant[0][0].toUpperCase() + '&' + relevant[1][0].toUpperCase();
-    return relevant.map(w => w[0].toUpperCase()).join('');
-}
+// ── Paleta de cores de acento disponíveis ──
+const ACCENT_COLORS=[
+  {id:'sky',    dark:'#38bdf8', light:'#0284c7', label:'Azul (padrão)'},
+  {id:'violet', dark:'#a78bfa', light:'#7c3aed', label:'Violeta'},
+  {id:'rose',   dark:'#fb7185', light:'#e11d48', label:'Rosa'},
+  {id:'amber',  dark:'#fbbf24', light:'#d97706', label:'Âmbar'},
+  {id:'emerald',dark:'#34d399', light:'#059669', label:'Esmeralda'},
+  {id:'orange', dark:'#fb923c', light:'#ea580c', label:'Laranja'},
+  {id:'fuchsia',dark:'#e879f9', light:'#c026d3', label:'Fúcsia'},
+  {id:'lime',   dark:'#a3e635', light:'#65a30d', label:'Lima'},
+  {id:'cyan',   dark:'#22d3ee', light:'#0891b2', label:'Ciano'},
+  {id:'white',  dark:'#f1f5f9', light:'#64748b', label:'Neutro'},
+];
 
-// ============================================================
-//  RENDER TABS
-// ============================================================
-function renderTabs() {
-    const list        = document.getElementById('tabs-list');
-    const suggestedKey = getSuggestedTab();
-    let html = '';
-    Object.keys(workoutData).forEach(key => {
-        const isActive    = key === currentTabKey ? 'active' : '';
-        const isSuggested = key === suggestedKey  ? 'suggested' : '';
-        html += `
-            <div class="tab-btn-wrapper ${isSuggested}">
-                <button class="btn-tab-rename" onclick="renameTab('${key}')" title="Renomear aba"><i class="ph-bold ph-pencil-simple"></i></button>
-                <button class="btn-tab-manage" onclick="deleteTab('${key}')"><i class="ph-bold ph-x"></i></button>
-                <button class="tab-btn ${isActive}" onclick="showWorkout('${key}')" ondblclick="renameTab('${key}')" oncontextmenu="renameTab('${key}'); return false;" title="${workoutData[key].label}">
-                    ${abbreviateLabel(workoutData[key].label)}
-                </button>
-                <span class="tab-suggested-dot" title="Treino sugerido para hoje"></span>
-            </div>`;
+function openSettings(){
+  closeFabMobile();
+  _renderSettingsState();
+  document.getElementById('cfg-modal').style.display='flex';
+}
+function closeSettings(){document.getElementById('cfg-modal').style.display='none'}
+document.addEventListener('DOMContentLoaded',()=>{
+  document.getElementById('cfg-modal')?.addEventListener('click',function(e){if(e.target===this)closeSettings()});
+});
+
+function _renderSettingsState(){
+  // Tema
+  const theme=getCached('app_theme')||'dark';
+  ['dark','light','auto'].forEach(t=>{
+    document.getElementById('theme-btn-'+t)?.classList.toggle('active',theme===t);
+  });
+
+  // Cor de acento
+  const accentId=getCached('app_accent')||'sky';
+  const grid=document.getElementById('cfg-accent-grid');
+  if(grid&&!grid.children.length){
+    grid.innerHTML=ACCENT_COLORS.map(c=>`
+      <div class="cfg-accent-swatch ${c.id===accentId?'active':''}"
+           style="background:${c.dark}"
+           title="${c.label}"
+           onclick="setAccent('${c.id}')"></div>`).join('');
+  } else if(grid){
+    grid.querySelectorAll('.cfg-accent-swatch').forEach((sw,i)=>{
+      sw.classList.toggle('active',ACCENT_COLORS[i].id===accentId);
     });
-    list.innerHTML = html;
+  }
+
+  // Unidade
+  const unit=getCached('app_unit')||'kg';
+  document.getElementById('unit-btn-kg')?.classList.toggle('active',unit==='kg');
+  document.getElementById('unit-btn-lb')?.classList.toggle('active',unit==='lb');
 }
 
-// ============================================================
-//  RENDER EXERCÍCIOS
-// ============================================================
-function renderAll() {
-    const container = document.getElementById('main-container');
-    const data      = workoutData[currentTabKey];
-    if (!data) return;
-    container.classList.remove('tab-content-animate');
-    void container.offsetWidth;
-    container.classList.add('tab-content-animate');
+// ── Tema ──
+function setTheme(t){
+  setCached('app_theme',t);
+  _applyTheme(t);
+  _renderSettingsState();
+}
 
-    let html = `<h2>${data.title} <i class="ph-bold ph-pencil-simple" onclick="editTitle()" style="cursor:pointer; opacity:0.5; font-size:14px"></i></h2>`;
-    if (!data.exercises.length) {
-        html += `<div class="empty-state"><i class="ph-bold ph-Barbell" style="font-size:3rem; opacity:0.2"></i><p>Nenhum exercício cadastrado.</p></div>`;
-    } else {
-        data.exercises.forEach(ex => {
-            const isChecked  = localStorage.getItem('check_'+ex.id) === 'true';
-            const weight     = localStorage.getItem('weight_'+ex.id) || '';
-            const noteVal    = localStorage.getItem('note_'+ex.id)   || '';
-            const prNum      = parseFloat(localStorage.getItem('pr_'+ex.id)) || 0;
-            const currentNum = parseFloat(weight.replace(',','.').replace(/[^0-9.]/g,''));
-            const isPR       = (!isNaN(currentNum) && currentNum >= prNum && prNum > 0);
+function _applyTheme(t){
+  document.body.setAttribute('data-theme',t);
+  // Atualiza botão mudar tema no FAB mobile
+  const fabTheme=document.getElementById('fab-theme-btn');
+  if(fabTheme) fabTheme.innerHTML=`<i class="ph-bold ph-${t==='dark'?'moon':t==='light'?'sun':'devices'}"></i> Tema: ${t==='dark'?'Escuro':t==='light'?'Claro':'Sistema'}`;
+}
 
-            html += `
-            <div class="exercise-card ${isChecked ? 'completed' : ''}" id="card_${ex.id}">
-                <button class="btn-remove"  onclick="removeEx('${currentTabKey}','${ex.id}')"><i class="ph-bold ph-x"></i></button>
-                <button class="btn-edit-ex" onclick="editEx('${currentTabKey}','${ex.id}')"><i class="ph-bold ph-pencil-simple"></i></button>
-                <label class="custom-checkbox">
-                    <input type="checkbox" onchange="toggleCheck('${ex.id}',this)" ${isChecked ? 'checked' : ''}>
-                    <span class="checkmark"></span>
-                </label>
-                <div style="flex-grow:1; width:100%;">
-                    <span class="ex-name">
-                        ${ex.name}
-                        ${ex.link ? `<a href="${ex.link}" target="_blank" style="color:var(--primary);"><i class="ph-bold ph-youtube-logo"></i></a>` : ''}
-                        <i class="ph-bold ph-note-pencil" onclick="toggleNote('${ex.id}')" style="cursor:pointer; opacity:0.5; font-size:1.1rem"></i>
-                    </span>
-                    ${noteVal ? `<div class="exercise-note-display" onclick="toggleNote('${ex.id}')">${noteVal.replace(/\n/g,'<br>')}</div>` : ''}
-                    <textarea class="exercise-note" id="note_${ex.id}" onchange="saveNote('${ex.id}',this.value)" placeholder="Dicas (ex: banco altura 3)...">${noteVal}</textarea>
-                    <div style="display:flex; gap:20px; margin-top:10px">
-                        <div><span class="info-label">Séries</span><br><span class="info-value">${ex.reps}</span></div>
-                        <div>
-                            <span class="info-label" style="${isPR ? 'color:var(--gold)' : ''}">Peso ${isPR ? '<i class="ph-fill ph-trophy" style="color:var(--gold)"></i>' : ''}</span><br>
-                            <input type="text" id="weight_${ex.id}" class="weight-input ${isPR ? 'pr-active' : ''}" value="${weight}" onchange="saveWeight('${ex.id}',this.value)" placeholder="0kg">
-                        </div>
-                        <div><span class="info-label">Pausa</span><br><span class="info-value ${ex.time !== 'Nec.' ? 'timer-trigger' : ''}" onclick="startTimer('${ex.time}')">${ex.time}</span></div>
-                    </div>
-                </div>
-            </div>`;
-        });
+// ── Cor de acento ──
+function setAccent(id){
+  const accent=ACCENT_COLORS.find(c=>c.id===id);
+  if(!accent)return;
+  setCached('app_accent',id);
+  _applyAccent(accent);
+  _renderSettingsState();
+  showToast(`🎨 Cor alterada para ${accent.label}`);
+}
+
+function _applyAccent(accent){
+  // Injeta variáveis CSS na raiz para sobrescrever --primary de ambos os temas
+  let styleEl=document.getElementById('accent-style');
+  if(!styleEl){styleEl=document.createElement('style');styleEl.id='accent-style';document.head.appendChild(styleEl)}
+  styleEl.textContent=`
+    :root,[data-theme="dark"],[data-theme="auto"]{
+      --primary:${accent.dark};
+      --primary-d:${accent.dark}20;
+      --border-hi:${accent.dark}45;
     }
-    container.innerHTML = html;
-    updateProgressBar();
-}
-
-// ============================================================
-//  NAVIGATION
-// ============================================================
-function showWorkout(key) {
-    currentTabKey = key;
-    saveActiveTab(key);
-    renderTabs(); renderAll();
-}
-
-function addTab() {
-    openInputModal('Nova aba de treino', 'Ex: Pernas, Glúteos…', '', (name) => {
-        if (!name.trim()) return;
-        const id = 'treino' + Date.now();
-        workoutData[id] = { label: name.trim(), title: name.trim(), exercises: [] };
-        saveData(); currentTabKey = id; saveActiveTab(id); renderTabs(); renderAll();
-    });
-}
-
-function renameTab(key) {
-    openInputModal('Renomear aba', 'Novo nome', workoutData[key].label, (n) => {
-        if (!n.trim()) return;
-        workoutData[key].label = n.trim();
-        saveData(); renderTabs();
-    });
-}
-
-function deleteTab(key) {
-    if (Object.keys(workoutData).length <= 1) {
-        openConfirmModal('Ação não permitida', 'Mantenha ao menos um treino cadastrado.', null, true); return;
+    [data-theme="light"],@media(prefers-color-scheme:light){
+      [data-theme="auto"]{
+        --primary:${accent.light};
+        --primary-d:${accent.light}18;
+        --border-hi:${accent.light}40;
+      }
     }
-    openConfirmModal(`Excluir aba "${workoutData[key].label}"?`, 'Todos os exercícios desta aba serão removidos permanentemente.', () => {
-        purgeTabData(key);
-        delete workoutData[key];
-        currentTabKey = Object.keys(workoutData)[0];
-        saveActiveTab(currentTabKey);
-        saveData(); renderTabs(); renderAll();
-    });
-}
-
-function editTitle() {
-    openInputModal('Renomear treino', 'Novo título', workoutData[currentTabKey].title, (t) => {
-        if (!t.trim()) return;
-        workoutData[currentTabKey].title = t;
-        saveData(); renderAll();
-    });
-}
-
-function editEx(key, id) {
-    const ex = workoutData[key].exercises.find(e => e.id === id);
-    if (ex) openExModal('edit', key, ex);
-}
-
-// ============================================================
-//  CHECK / WEIGHT / NOTES
-// ============================================================
-function toggleCheck(id, el) {
-    localStorage.setItem('check_'+id, el.checked);
-    if (el.checked) {
-        localStorage.setItem('app_last_active', Date.now());
-        registerTabUsage(currentTabKey);
-        const d = new Date();
-        const ds = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
-        const hist = JSON.parse(localStorage.getItem('app_history') || '{}');
-        hist[ds] = true;
-        localStorage.setItem('app_history', JSON.stringify(hist));
+    [data-theme="light"]{
+      --primary:${accent.light};
+      --primary-d:${accent.light}18;
+      --border-hi:${accent.light}40;
     }
-    document.getElementById('card_'+id).classList.toggle('completed', el.checked);
-    updateProgressBar();
+  `;
 }
 
-function updateProgressBar() {
-    const exes    = workoutData[currentTabKey].exercises;
-    const checked = exes.filter(ex => localStorage.getItem('check_'+ex.id) === 'true').length;
-    const pct     = exes.length > 0 ? Math.round((checked / exes.length) * 100) : 0;
-    document.getElementById('summary-text').innerText = `${checked} de ${exes.length} concluídos (${pct}%)`;
-    document.getElementById('summary-bar-fill').style.width = pct + '%';
+// ── Unidade kg / lb ──
+const KG_TO_LB=2.20462;
+const LB_TO_KG=1/KG_TO_LB;
+
+function setUnit(unit){
+  const prev=getCached('app_unit')||'kg';
+  if(prev===unit)return;
+  setCached('app_unit',unit);
+  // Converte todos os pesos salvos
+  _convertAllWeights(prev,unit);
+  _renderSettingsState();
+  renderAll();
+  showToast(`⚖️ Unidade alterada para ${unit}`);
 }
 
-function saveWeight(id, val) {
-    localStorage.setItem('weight_'+id, val);
-    const num = parseFloat(val.replace(',','.').replace(/[^0-9.]/g,''));
-    if (!isNaN(num)) {
-        const pr = parseFloat(localStorage.getItem('pr_'+id)) || 0;
-        if (num > pr) localStorage.setItem('pr_'+id, num);
+function _convertAllWeights(from,to){
+  const factor=from==='kg'?KG_TO_LB:LB_TO_KG;
+  // weight_ e wh_ (histórico)
+  for(let i=0;i<localStorage.length;i++){
+    const k=localStorage.key(i);
+    if(k.startsWith('weight_')){
+      const v=parseFloat(getCached(k));
+      if(!isNaN(v)&&v>0) setCached(k,parseFloat((v*factor).toFixed(2))+'');
     }
-    renderAll();
-}
-
-function toggleNote(id) {
-    const textarea  = document.getElementById('note_'+id);
-    const isOpening = !textarea.classList.contains('show');
-    textarea.classList.toggle('show');
-    const card = document.getElementById('card_'+id);
-    if (card) {
-        const display = card.querySelector('.exercise-note-display');
-        if (display) display.style.display = isOpening ? 'none' : '';
+    if(k.startsWith('pr_')){
+      const v=parseFloat(getCached(k));
+      if(!isNaN(v)&&v>0) setCached(k,parseFloat((v*factor).toFixed(2))+'');
     }
-    if (isOpening) textarea.focus();
-}
-
-function saveNote(id, val) {
-    localStorage.setItem('note_'+id, val);
-    const card = document.getElementById('card_'+id);
-    if (card) {
-        const textarea = card.querySelector('.exercise-note');
-        let display    = card.querySelector('.exercise-note-display');
-        if (val.trim()) {
-            if (!display) {
-                display = document.createElement('div');
-                display.className = 'exercise-note-display';
-                display.onclick   = () => toggleNote(id);
-                textarea.parentNode.insertBefore(display, textarea);
-            }
-            display.innerHTML     = val.replace(/\n/g,'<br>');
-            display.style.display = '';
-        } else if (display) { display.remove(); }
+    if(k.startsWith('wh_')){
+      const wh=JSON.parse(getCached(k)||'[]');
+      const converted=wh.map(e=>({...e,v:parseFloat((e.v*factor).toFixed(2))}));
+      setCached(k,JSON.stringify(converted));
     }
+  }
 }
 
-function saveData() { localStorage.setItem('app_workout_data', JSON.stringify(workoutData)); }
+// Exibe o sufixo correto na UI (placeholder dos inputs de peso)
+function getWeightUnit(){return getCached('app_unit')||'kg'}
 
-// ============================================================
-//  FAB
-// ============================================================
-function toggleFab()    { document.getElementById('fab-menu').classList.toggle('show'); document.getElementById('fab-btn').classList.toggle('active'); }
-function closeFabMobile() { if (window.innerWidth < 1024 && document.getElementById('fab-menu').classList.contains('show')) toggleFab(); }
-function fabEdit() {
-    document.body.classList.toggle('edit-mode');
-    const isEdit = document.body.classList.contains('edit-mode');
-    const text   = isEdit ? `<i class="ph-bold ph-check"></i> Sair Edição` : `<i class="ph-bold ph-gear"></i> Modo Edição`;
-    document.getElementById('edit-fab-text').innerHTML = text;
-    if (document.getElementById('desktop-edit-btn')) document.getElementById('desktop-edit-btn').innerHTML = text;
-    closeFabMobile();
-}
-function fabAdd()   { closeFabMobile(); openExModal('new', null, null); }
-function fabReset() {
-    closeFabMobile();
-    openConfirmModal('Limpar treino de hoje?', 'Todas as marcações do treino atual serão apagadas.', () => {
-        workoutData[currentTabKey].exercises.forEach(ex => localStorage.setItem('check_'+ex.id, 'false'));
-        renderAll();
-    });
-}
-
-function removeEx(key, id) {
-    workoutData[key].exercises = workoutData[key].exercises.filter(ex => ex.id !== id);
-    purgeExerciseData(id);
-    saveData(); renderAll();
-}
-
-// ============================================================
-//  TEMA / HISTÓRICO / BACKUP
-// ============================================================
-function toggleTheme() {
-    const next = document.body.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-    document.body.setAttribute('data-theme', next);
-    localStorage.setItem('app_theme', next);
-    closeFabMobile();
-}
-
-function openHistory() {
-    const grid  = document.getElementById('heatmap-grid');
-    grid.innerHTML = '';
-    const hist  = JSON.parse(localStorage.getItem('app_history') || '{}');
-    const today = new Date();
-    for (let i = 27; i >= 0; i--) {
-        const d = new Date(); d.setDate(today.getDate() - i);
-        const ds = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
-        const sq = document.createElement('div');
-        sq.className    = 'heat-square';
-        sq.style.background = hist[ds] ? 'var(--success)' : 'rgba(0,0,0,0.1)';
-        sq.innerText    = d.getDate();
-        grid.appendChild(sq);
+// ── Reset total ──
+function confirmResetAll(){
+  openConfirmModal(
+    '⚠️ Resetar tudo?',
+    'Todos os treinos, pesos, histórico e configurações serão apagados permanentemente. Esta ação não pode ser desfeita.',
+    ()=>{
+      localStorage.clear();
+      location.reload();
     }
-    document.getElementById('history-modal').style.display = 'flex';
-    closeFabMobile();
+  );
 }
 
-function exportData() {
-    const weights = {};
-    for (let i = 0; i < localStorage.length; i++) {
-        const k = localStorage.key(i);
-        if (k.startsWith('weight_') || k.startsWith('note_') || k.startsWith('pr_') || k === 'app_history')
-            weights[k] = localStorage.getItem(k);
+// ── Aplica configurações salvas no boot ──
+function applyStoredSettings(){
+  // Tema
+  const theme=getCached('app_theme')||'dark';
+  _applyTheme(theme);
+  // Acento
+  const accentId=getCached('app_accent')||'sky';
+  const accent=ACCENT_COLORS.find(c=>c.id===accentId);
+  if(accent&&accentId!=='sky') _applyAccent(accent);
+}
+
+function openHistory(){
+  const grid=document.getElementById('heatmap-grid');grid.innerHTML='';
+  const hist=JSON.parse(getCached('app_history')||'{}'),today=new Date();
+  for(let i=27;i>=0;i--){
+    const d=new Date();d.setDate(today.getDate()-i);
+    const ds=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    const sq=document.createElement('div');sq.className='heat-square'+(hist[ds]?' active':'');
+    sq.style.cssText=`background:${hist[ds]?'var(--success)':'rgba(0,0,0,.1)'};animation-delay:${i*18}ms`;
+    sq.innerText=d.getDate();grid.appendChild(sq);
+  }
+  document.getElementById('history-modal').style.display='flex';closeFabMobile();
+}
+
+function exportData(){
+  const w={};for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k.startsWith('weight_')||k.startsWith('note_')||k.startsWith('pr_')||k.startsWith('wh_')||k==='app_history')w[k]=getCached(k)}
+  const dl=document.createElement('a');dl.href="data:text/json;charset=utf-8,"+encodeURIComponent(JSON.stringify({workoutData,weights:w}));dl.download="backup_treino.json";dl.click();closeFabMobile();
+}
+function importData(event){
+  const r=new FileReader();
+  r.onload=e=>{const d=JSON.parse(e.target.result);if(d.weights)Object.keys(d.weights).forEach(k=>{_lsCache[k]=d.weights[k];localStorage.setItem(k,d.weights[k])});if(d.workoutData){workoutData=d.workoutData;saveDataNow()}location.reload()};
+  r.readAsText(event.target.files[0]);
+}
+
+/* ── LAZY LOAD helper ── */
+function loadScript(src){
+  return new Promise((resolve,reject)=>{
+    // Evita carregar o mesmo script duas vezes
+    if(document.querySelector(`script[src="${src}"]`)){resolve();return}
+    const s=document.createElement('script');
+    s.src=src;s.onload=resolve;s.onerror=()=>reject(new Error(`Falha ao carregar: ${src}`));
+    document.head.appendChild(s);
+  });
+}
+
+/* ── EXPORTAR PDF (jsPDF carregado sob demanda ~500 KB) ── */
+async function exportPDF(){
+  closeFabMobile();
+  if(!Object.values(workoutData).some(t=>t.exercises.length>0)){openConfirmModal('Nenhum exercício cadastrado','Adicione ao menos um exercício.',null,true);return}
+
+  // ✅ OTIMIZAÇÃO 1: jsPDF só é baixado na primeira vez que o usuário exportar
+  if(!window.jspdf){
+    showToast('<i class="ph-bold ph-spinner" style="color:var(--primary)"></i> Carregando exportador...');
+    try{
+      await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
+    }catch(e){
+      openConfirmModal('Erro ao carregar','Verifique sua conexão e tente novamente.',null,true);return;
     }
-    const dl = document.createElement('a');
-    dl.href     = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify({workoutData, weights}));
-    dl.download = "backup_treino.json";
-    dl.click();
-    closeFabMobile();
+  }
+
+  const {jsPDF}=window.jspdf,doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'}),pW=210,mg=14,cW=pW-mg*2;let y=20;
+  doc.setProperties({subject:'TRAINING_PRO_EXPORT_V1'});
+  doc.setFillColor(14,165,233);doc.rect(0,0,pW,14,'F');doc.setTextColor(255,255,255);doc.setFontSize(11);doc.setFont('helvetica','bold');
+  doc.text('FICHA DE TREINO — TRAINING PRO',pW/2,9.5,{align:'center'});doc.setFontSize(7);doc.setFont('helvetica','normal');
+  doc.text(`Gerado em: ${new Date().toLocaleDateString('pt-BR')}`,pW-mg,9.5,{align:'right'});y=22;
+  Object.keys(workoutData).forEach((key,ti)=>{
+    const tab=workoutData[key];if(!tab.exercises.length)return;
+    if(ti>0&&y>250){doc.addPage();y=15}
+    doc.setFillColor(30,41,59);doc.roundedRect(mg,y,cW,9,2,2,'F');doc.setTextColor(56,189,248);doc.setFontSize(9);doc.setFont('helvetica','bold');
+    doc.text(`${abbrev(tab.label)}  —  ${tab.title.toUpperCase()}`,mg+4,y+6);y+=13;
+    const cols={name:mg,reps:mg+90,time:mg+130,weight:mg+160};
+    doc.setFillColor(248,250,252);doc.rect(mg,y,cW,7,'F');doc.setTextColor(100,116,139);doc.setFontSize(7.5);doc.setFont('helvetica','bold');
+    doc.text('EXERCÍCIO',cols.name+2,y+5);doc.text('SÉRIES',cols.reps,y+5);doc.text('PAUSA',cols.time,y+5);doc.text('PESO REG.',cols.weight,y+5);y+=7;
+    tab.exercises.forEach((ex,i)=>{
+      if(y>272){doc.addPage();y=15}const rh=8;
+      doc.setFillColor(...(i%2===0?[255,255,255]:[241,245,249]));doc.rect(mg,y,cW,rh,'F');
+      doc.setTextColor(30,41,59);doc.setFontSize(8);doc.setFont('helvetica','normal');
+      doc.text(ex.name.length>52?ex.name.substring(0,52)+'…':ex.name,cols.name+2,y+5.5);
+      doc.text(ex.reps,cols.reps,y+5.5);doc.text(ex.time,cols.time,y+5.5);
+      doc.text(getCached('weight_'+ex.id)||'—',cols.weight,y+5.5);
+      doc.setDrawColor(226,232,240);doc.line(mg,y+rh,mg+cW,y+rh);y+=rh;
+    });y+=8;
+  });
+  const tp=doc.getNumberOfPages();for(let p=1;p<=tp;p++){doc.setPage(p);doc.setFontSize(7);doc.setTextColor(148,163,184);doc.setFont('helvetica','normal');doc.text(`Training Pro  •  Página ${p} de ${tp}`,pW/2,292,{align:'center'})}
+  doc.save('ficha_treino.pdf');
 }
 
-function importData(event) {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-        const d = JSON.parse(e.target.result);
-        if (d.weights)     Object.keys(d.weights).forEach(k => localStorage.setItem(k, d.weights[k]));
-        if (d.workoutData) { workoutData = d.workoutData; saveData(); }
-        location.reload();
+/* ── IMPORTAR PDF (PDF.js carregado sob demanda ~1.2 MB) ── */
+async function importPDF(event){
+  const file=event.target.files[0];event.target.value='';if(!file)return;
+  if(file.size>2*1024*1024){openConfirmModal('Arquivo muito grande','Máx 2 MB.',null,true);return}
+  openConfirmModal('Importar Ficha PDF?','Os treinos atuais serão substituídos.',async()=>{
+    try{
+      // ✅ OTIMIZAÇÃO 1: PDF.js só é baixado na primeira vez que o usuário importar
+      if(!window.pdfjsLib){
+        showToast('<i class="ph-bold ph-spinner" style="color:var(--primary)"></i> Carregando leitor de PDF...');
+        await loadScript('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js');
+      }
+      pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+      const pdf=await pdfjsLib.getDocument({data:await file.arrayBuffer()}).promise;
+      let full='';for(let p=1;p<=pdf.numPages;p++){const pg=await pdf.getPage(p);const c=await pg.getTextContent();full+=c.items.map(i=>i.str).join(' ')+'\n'}
+      if(!full.includes('TRAINING PRO')&&!full.includes('FICHA DE TREINO')){openConfirmModal('PDF não reconhecido','Formato inválido.',null,true);return}
+      const parsed={},lines=full.split('\n').map(l=>l.trim()).filter(Boolean);let ck=null;
+      lines.forEach(line=>{
+        if(/^EXERCÍCIO\s+SÉRIES/i.test(line)||/Training Pro\s*•\s*Página/i.test(line)||/^Gerado em:/i.test(line)||line==='FICHA DE TREINO — TRAINING PRO')return;
+        const tm=line.match(/^(.+?)\s+[—\-–]\s+(.+)$/);
+        if(tm){ck='treino_'+tm[1].trim().replace(/\s+/g,'_');parsed[ck]={label:tm[1].trim(),title:tm[2].trim().charAt(0).toUpperCase()+tm[2].trim().slice(1).toLowerCase(),exercises:[]};return}
+        if(!ck)return;
+        const em=line.match(/^(.+?)\s{2,}(\S.*?\S|\S)\s{2,}(\S+)\s{2,}(\S+)\s*$/);
+        if(em)parsed[ck].exercises.push({id:'ex_'+Date.now()+'_'+Math.random().toString(36).substr(2,5),name:em[1].trim().replace(/…$/,''),reps:em[2].trim(),time:em[3].trim()});
+      });
+      const tc=Object.keys(parsed).length;if(!tc){openConfirmModal('Nenhum dado encontrado','Verifique o arquivo.',null,true);return}
+      workoutData=parsed;currentTabKey=Object.keys(parsed)[0];saveDataNow();saveActiveTab(currentTabKey);renderTabs();renderAll();
+      openConfirmModal('Importação concluída ✓',`${tc} aba(s) importada(s).`,null,true);
+    }catch(e){openConfirmModal('Erro ao ler arquivo','Arquivo corrompido?',null,true)}
+  });
+}
+
+/* ═══════════════════════════════════════════════════════════
+   TEMPLATES DE TREINO
+   ═══════════════════════════════════════════════════════════ */
+const TEMPLATES=[
+  {id:'push',icon:'💪',name:'Push (Empurrar)',desc:'Peito, Ombros, Tríceps',exercises:[
+    {name:'Supino reto barra',reps:'4x8-12',time:'2m'},{name:'Supino inclinado halteres',reps:'3x10-12',time:'1m30'},
+    {name:'Desenvolvimento militar',reps:'4x8-10',time:'2m'},{name:'Elevação lateral',reps:'4x12-15',time:'1m'},
+    {name:'Crossover cabo',reps:'3x12-15',time:'1m'},{name:'Tríceps corda',reps:'4x12',time:'1m'},
+    {name:'Tríceps testa',reps:'3x10-12',time:'1m30'}
+  ]},
+  {id:'pull',icon:'🏋️',name:'Pull (Puxar)',desc:'Costas, Bíceps, Posterior',exercises:[
+    {name:'Barra fixa',reps:'4x máx',time:'2m'},{name:'Remada curvada',reps:'4x8-10',time:'2m'},
+    {name:'Pulldown pegada aberta',reps:'3x12',time:'1m30'},{name:'Remada baixa cabo',reps:'3x12',time:'1m30'},
+    {name:'Rosca direta barra',reps:'4x10-12',time:'1m30'},{name:'Rosca martelo',reps:'3x12',time:'1m'},
+    {name:'Levantamento terra romeno',reps:'3x10',time:'2m'}
+  ]},
+  {id:'legs',icon:'🦵',name:'Pernas',desc:'Quadríceps, Posterior, Glúteos',exercises:[
+    {name:'Agachamento livre',reps:'4x8-10',time:'2m30'},{name:'Leg press 45°',reps:'4x12',time:'2m'},
+    {name:'Cadeira extensora',reps:'3x15',time:'1m30'},{name:'Mesa flexora',reps:'4x12',time:'1m30'},
+    {name:'Stiff halteres',reps:'3x12',time:'1m30'},{name:'Elevação pélvica',reps:'4x15',time:'1m'},
+    {name:'Panturrilha em pé',reps:'4x falha',time:'1m'}
+  ]},
+  {id:'upper',icon:'🤸',name:'Superior',desc:'Peito, Costas, Ombros, Braços',exercises:[
+    {name:'Supino reto',reps:'4x8-10',time:'2m'},{name:'Remada curvada',reps:'4x8-10',time:'2m'},
+    {name:'Desenvolvimento halteres',reps:'3x10',time:'1m30'},{name:'Pulldown',reps:'3x12',time:'1m30'},
+    {name:'Elevação lateral',reps:'3x15',time:'1m'},{name:'Rosca alternada',reps:'3x12',time:'1m'},
+    {name:'Tríceps corda',reps:'3x12',time:'1m'}
+  ]},
+  {id:'lower',icon:'⚡',name:'Inferior',desc:'Glúteos, Posterior, Quadríceps',exercises:[
+    {name:'Agachamento búlgaro',reps:'4x10 cada',time:'2m'},{name:'Levantamento terra',reps:'4x6-8',time:'3m'},
+    {name:'Afundo caminhando',reps:'3x12 cada',time:'1m30'},{name:'Cadeira abdutora',reps:'3x15',time:'1m'},
+    {name:'Leg curl deitado',reps:'4x12',time:'1m30'},{name:'Panturrilha sentada',reps:'4x falha',time:'1m'}
+  ]},
+  {id:'fullbody',icon:'🔥',name:'Full Body',desc:'Corpo todo — 3x/semana',exercises:[
+    {name:'Agachamento',reps:'3x10',time:'2m'},{name:'Supino reto',reps:'3x10',time:'2m'},
+    {name:'Remada curvada',reps:'3x10',time:'2m'},{name:'Desenvolvimento',reps:'3x10',time:'1m30'},
+    {name:'Rosca direta',reps:'3x12',time:'1m'},{name:'Tríceps corda',reps:'3x12',time:'1m'},
+    {name:'Panturrilha em pé',reps:'3x falha',time:'1m'}
+  ]},
+  {id:'hiit',icon:'🏃',name:'HIIT / Funcional',desc:'Circuito de alta intensidade',exercises:[
+    {name:'Burpee',reps:'4x10',time:'45s'},{name:'Agachamento jump',reps:'4x15',time:'45s'},
+    {name:'Flexão',reps:'4x máx',time:'45s'},{name:'Mountain climber',reps:'4x30s',time:'30s'},
+    {name:'Afundo com salto',reps:'3x10 cada',time:'45s'},{name:'Prancha',reps:'4x45s',time:'30s'}
+  ]},
+  {id:'arms',icon:'💥',name:'Braços',desc:'Bíceps e Tríceps',exercises:[
+    {name:'Rosca direta barra',reps:'4x10-12',time:'1m30'},{name:'Rosca alternada',reps:'3x12',time:'1m'},
+    {name:'Rosca Scott',reps:'3x12',time:'1m30'},{name:'Rosca martelo cabo',reps:'3x15',time:'1m'},
+    {name:'Tríceps testa',reps:'4x10-12',time:'1m30'},{name:'Tríceps francês polia',reps:'3x12',time:'1m'},
+    {name:'Mergulho em banco',reps:'3x máx',time:'1m'}
+  ]}
+];
+
+function openTemplatesModal(){
+  closeFabMobile();
+  const grid=document.getElementById('tpl-grid');
+  grid.innerHTML=TEMPLATES.map(t=>`
+    <div class="tpl-card" onclick="applyTemplate('${t.id}')">
+      <div class="tpl-card-icon">${t.icon}</div>
+      <div class="tpl-card-name">${t.name}</div>
+      <div class="tpl-card-count">${t.desc} · ${t.exercises.length} exercícios</div>
+    </div>`).join('');
+  document.getElementById('templates-modal').style.display='flex';
+}
+function closeTemplatesModal(){document.getElementById('templates-modal').style.display='none'}
+
+function applyTemplate(tplId){
+  const tpl=TEMPLATES.find(t=>t.id===tplId);if(!tpl)return;
+  closeTemplatesModal();
+  openInputModal(`Nome para "${tpl.name}"`, 'Ex: Treino A', tpl.name, (name)=>{
+    if(!name.trim())return;
+    const id='treino'+Date.now();
+    workoutData[id]={
+      label:name.trim(),
+      title:name.trim(),
+      exercises:tpl.exercises.map((ex,i)=>({
+        id:`${tplId}_${i}_${Date.now()}`,
+        name:ex.name, reps:ex.reps, time:ex.time, link:''
+      }))
     };
-    reader.readAsText(event.target.files[0]);
+    saveData();currentTabKey=id;saveActiveTab(id);renderTabs();renderAll();
+    showToast(`✅ Template "${tpl.name}" criado!`);
+  });
 }
 
-// ============================================================
-//  PDF EXPORT
-// ============================================================
-function exportPDF() {
-    closeFabMobile();
-    const hasExercises = Object.values(workoutData).some(t => t.exercises.length > 0);
-    if (!hasExercises) {
-        openConfirmModal('Nenhum exercício cadastrado', 'Adicione pelo menos um exercício antes de exportar sua ficha.', null, true);
-        return;
-    }
-    const { jsPDF } = window.jspdf;
-    const doc    = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-    const pageW  = 210, margin = 14, colW = pageW - margin * 2;
-    let y = 20;
-    doc.setProperties({ subject: 'TRAINING_PRO_EXPORT_V1' });
+function useBlankTab(){
+  closeTemplatesModal();
+  openInputModal('Nova aba em branco','Ex: Pernas, Glúteos…','',(n)=>{
+    if(!n.trim())return;
+    const id='treino'+Date.now();
+    workoutData[id]={label:n.trim(),title:n.trim(),exercises:[]};
+    saveData();currentTabKey=id;saveActiveTab(id);renderTabs();renderAll();
+  });
+}
 
-    doc.setFillColor(14, 165, 233);
-    doc.rect(0, 0, pageW, 14, 'F');
-    doc.setTextColor(255,255,255);
-    doc.setFontSize(11); doc.setFont('helvetica','bold');
-    doc.text('FICHA DE TREINO — TRAINING PRO', pageW/2, 9.5, { align:'center' });
-    doc.setFontSize(7); doc.setFont('helvetica','normal');
-    doc.text(`Gerado em: ${new Date().toLocaleDateString('pt-BR')}`, pageW - margin, 9.5, { align:'right' });
-    y = 22;
+document.getElementById('templates-modal').addEventListener('click',function(e){if(e.target===this)closeTemplatesModal()});
 
-    Object.keys(workoutData).forEach((key, tabIndex) => {
-        const tab = workoutData[key];
-        if (!tab.exercises.length) return;
-        if (tabIndex > 0 && y > 250) { doc.addPage(); y = 15; }
+/* ═══════════════════════════════════════════════════════════
+   DRAG AND DROP — reordenação de exercícios
+   ═══════════════════════════════════════════════════════════ */
+let _dragSrcId=null;
 
-        doc.setFillColor(30,41,59);
-        doc.roundedRect(margin, y, colW, 9, 2, 2, 'F');
-        doc.setTextColor(56,189,248); doc.setFontSize(9); doc.setFont('helvetica','bold');
-        doc.text(`${abbreviateLabel(tab.label)}  —  ${tab.title.toUpperCase()}`, margin + 4, y + 6);
-        y += 13;
+function initDragDrop(){
+  const cards=document.querySelectorAll('#main-container .exercise-card');
+  cards.forEach(card=>{
+    const handle=card.querySelector('.drag-handle');
+    if(!handle)return;
 
-        const cols = { name: margin, reps: margin+90, time: margin+130, weight: margin+160 };
-        doc.setFillColor(248,250,252);
-        doc.rect(margin, y, colW, 7, 'F');
-        doc.setTextColor(100,116,139); doc.setFontSize(7.5); doc.setFont('helvetica','bold');
-        doc.text('EXERCÍCIO', cols.name+2, y+5);
-        doc.text('SÉRIES',    cols.reps,   y+5);
-        doc.text('PAUSA',     cols.time,   y+5);
-        doc.text('PESO REG.', cols.weight, y+5);
-        y += 7;
+    // Desktop: drag via HTML5 API a partir da alça
+    handle.addEventListener('mousedown',()=>{ card.setAttribute('draggable','true'); });
+    handle.addEventListener('mouseleave',()=>{ if(!_dragSrcId) card.setAttribute('draggable','false'); });
 
-        tab.exercises.forEach((ex, i) => {
-            if (y > 272) { doc.addPage(); y = 15; }
-            const rowH = 8;
-            const bg   = i % 2 === 0 ? [255,255,255] : [241,245,249];
-            doc.setFillColor(...bg); doc.rect(margin, y, colW, rowH, 'F');
-            doc.setTextColor(30,41,59); doc.setFontSize(8); doc.setFont('helvetica','normal');
-            const nameStr = ex.name.length > 52 ? ex.name.substring(0,52) + '…' : ex.name;
-            doc.text(nameStr, cols.name+2, y+5.5);
-            doc.text(ex.reps, cols.reps,   y+5.5);
-            doc.text(ex.time, cols.time,   y+5.5);
-            doc.text(localStorage.getItem('weight_'+ex.id) || '—', cols.weight, y+5.5);
-            doc.setDrawColor(226,232,240);
-            doc.line(margin, y+rowH, margin+colW, y+rowH);
-            y += rowH;
-        });
-        y += 8;
+    card.addEventListener('dragstart',e=>{
+      _dragSrcId=card.dataset.id;
+      card.classList.add('dragging');
+      e.dataTransfer.effectAllowed='move';
+      e.dataTransfer.setData('text/plain',_dragSrcId);
+    });
+    card.addEventListener('dragend',()=>{
+      card.classList.remove('dragging');
+      card.setAttribute('draggable','false');
+      document.querySelectorAll('.exercise-card').forEach(c=>c.classList.remove('drag-over'));
+      _dragSrcId=null;
+    });
+    card.addEventListener('dragover',e=>{
+      e.preventDefault();e.dataTransfer.dropEffect='move';
+      if(card.dataset.id!==_dragSrcId) card.classList.add('drag-over');
+    });
+    card.addEventListener('dragleave',()=>card.classList.remove('drag-over'));
+    card.addEventListener('drop',e=>{
+      e.preventDefault();
+      card.classList.remove('drag-over');
+      const targetId=card.dataset.id;
+      if(!_dragSrcId||_dragSrcId===targetId)return;
+      reorderExercises(_dragSrcId,targetId);
     });
 
-    const totalPages = doc.getNumberOfPages();
-    for (let p = 1; p <= totalPages; p++) {
-        doc.setPage(p);
-        doc.setFontSize(7); doc.setTextColor(148,163,184); doc.setFont('helvetica','normal');
-        doc.text(`Training Pro  •  Página ${p} de ${totalPages}`, pageW/2, 292, { align:'center' });
-    }
-    doc.save('ficha_treino.pdf');
-}
+    // Mobile: touch drag
+    let touchDragEl=null,touchClone=null,touchTargetId=null;
+    handle.addEventListener('touchstart',e=>{
+      e.preventDefault();
+      _dragSrcId=card.dataset.id;
+      touchDragEl=card;
+      card.classList.add('dragging');
+      // Cria clone visual
+      touchClone=card.cloneNode(true);
+      touchClone.style.cssText=`position:fixed;z-index:9999;opacity:.85;pointer-events:none;
+        width:${card.offsetWidth}px;border-radius:20px;transform:scale(1.03);
+        box-shadow:0 20px 50px rgba(0,0,0,.5);transition:none`;
+      document.body.appendChild(touchClone);
+    },{passive:false});
 
-// ============================================================
-//  PDF IMPORT
-// ============================================================
-async function importPDF(event) {
-    const file = event.target.files[0];
-    event.target.value = '';
-    if (!file) return;
-    if (file.size > 2 * 1024 * 1024) {
-        openConfirmModal('Arquivo muito grande', 'O PDF deve ter no máximo 2 MB. Tente exportar novamente pelo Training Pro.', null, true); return;
-    }
-    openConfirmModal('Importar Ficha PDF?', 'Os treinos atuais serão substituídos pelos dados do arquivo. Esta ação não pode ser desfeita.', async () => {
-        try {
-            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-            const pdf = await pdfjsLib.getDocument({ data: await file.arrayBuffer() }).promise;
-            let fullText = '';
-            for (let p = 1; p <= pdf.numPages; p++) {
-                const page    = await pdf.getPage(p);
-                const content = await page.getTextContent();
-                fullText += content.items.map(i => i.str).join(' ') + '\n';
-            }
-            if (!fullText.includes('TRAINING PRO') && !fullText.includes('FICHA DE TREINO')) {
-                openConfirmModal('PDF não reconhecido', 'Este PDF não segue o formato do Training Pro e não pôde ser importado.', null, true); return;
-            }
-            const parsed = {};
-            const lines  = fullText.split('\n').map(l => l.trim()).filter(Boolean);
-            let currentKey = null;
-            const tableHeaderRe = /^EXERCÍCIO\s+SÉRIES/i;
-            const footerRe      = /Training Pro\s*•\s*Página/i;
-            const dateRe        = /^Gerado em:/i;
-            const tabHeaderRe   = /^(.+?)\s+[—\-–]\s+(.+)$/;
+    handle.addEventListener('touchmove',e=>{
+      e.preventDefault();
+      const t=e.touches[0];
+      if(touchClone){
+        touchClone.style.left=(t.clientX-touchClone.offsetWidth/2)+'px';
+        touchClone.style.top=(t.clientY-80)+'px';
+      }
+      // Detecta card alvo
+      touchClone&&(touchClone.style.display='none');
+      const el=document.elementFromPoint(t.clientX,t.clientY);
+      touchClone&&(touchClone.style.display='');
+      const targetCard=el?.closest('.exercise-card');
+      document.querySelectorAll('.exercise-card').forEach(c=>c.classList.remove('drag-over'));
+      if(targetCard&&targetCard.dataset.id!==_dragSrcId){
+        targetCard.classList.add('drag-over');
+        touchTargetId=targetCard.dataset.id;
+      } else touchTargetId=null;
+    },{passive:false});
 
-            lines.forEach(line => {
-                if (tableHeaderRe.test(line) || footerRe.test(line) || dateRe.test(line)) return;
-                if (line === 'FICHA DE TREINO — TRAINING PRO') return;
-                const tabMatch = line.match(tabHeaderRe);
-                if (tabMatch) {
-                    const label = tabMatch[1].trim();
-                    const title = tabMatch[2].trim();
-                    currentKey  = 'treino_' + label.replace(/\s+/g,'_');
-                    parsed[currentKey] = { label, title: title.charAt(0).toUpperCase() + title.slice(1).toLowerCase(), exercises: [] };
-                    return;
-                }
-                if (!currentKey) return;
-                const exMatch = line.match(/^(.+?)\s{2,}(\S.*?\S|\S)\s{2,}(\S+)\s{2,}(\S+)\s*$/);
-                if (exMatch) {
-                    parsed[currentKey].exercises.push({
-                        id:   'ex_' + Date.now() + '_' + Math.random().toString(36).substr(2,5),
-                        name: exMatch[1].trim().replace(/…$/,''),
-                        reps: exMatch[2].trim(),
-                        time: exMatch[3].trim()
-                    });
-                }
-            });
-            const tabCount = Object.keys(parsed).length;
-            if (!tabCount) {
-                openConfirmModal('Nenhum dado encontrado', 'Não foi possível extrair exercícios deste PDF.', null, true); return;
-            }
-            workoutData   = parsed;
-            currentTabKey = Object.keys(parsed)[0];
-            saveData(); saveActiveTab(currentTabKey); renderTabs(); renderAll();
-            openConfirmModal('Importação concluída ✓', `${tabCount} aba(s) importada(s) com sucesso.`, null, true);
-        } catch (err) {
-            openConfirmModal('Erro ao ler o arquivo', 'Não foi possível processar o PDF. Verifique se o arquivo não está corrompido.', null, true);
-        }
+    handle.addEventListener('touchend',()=>{
+      card.classList.remove('dragging');
+      touchClone?.remove(); touchClone=null;
+      document.querySelectorAll('.exercise-card').forEach(c=>c.classList.remove('drag-over'));
+      if(_dragSrcId&&touchTargetId&&_dragSrcId!==touchTargetId)
+        reorderExercises(_dragSrcId,touchTargetId);
+      _dragSrcId=null;touchTargetId=null;
     });
+  });
 }
 
-// ============================================================
-//  TIMER
-// ============================================================
+function reorderExercises(srcId,targetId){
+  const exes=workoutData[currentTabKey].exercises;
+  const si=exes.findIndex(e=>e.id===srcId);
+  const ti=exes.findIndex(e=>e.id===targetId);
+  if(si<0||ti<0)return;
+  const [moved]=exes.splice(si,1);
+  exes.splice(ti,0,moved);
+  saveData();renderAll();
+}
+
+/* ═══════════════════════════════════════════════════════════
+   HISTÓRICO DE CARGAS
+   ═══════════════════════════════════════════════════════════ */
+let _whCurrentId=null;
+
+function openWhModal(exId,exName){
+  _whCurrentId=exId;
+  document.getElementById('wh-modal-title').textContent=exName;
+  const pr=parseFloat(getCached('pr_'+exId))||0;
+  document.getElementById('wh-modal-pr').textContent=pr>0?`🏆 Recorde: ${pr} kg`:'Sem recorde ainda';
+  renderWhModal(exId);
+  document.getElementById('wh-modal').style.display='flex';
+}
+function closeWhModal(){document.getElementById('wh-modal').style.display='none';_whCurrentId=null}
+document.getElementById('wh-modal').addEventListener('click',function(e){if(e.target===this)closeWhModal()});
+
+function renderWhModal(exId){
+  const wh=JSON.parse(getCached('wh_'+exId)||'[]').sort((a,b)=>a.d.localeCompare(b.d));
+  const pr=parseFloat(getCached('pr_'+exId))||0;
+
+  // ── SVG mini-chart ──
+  const svg=document.getElementById('wh-svg');
+  svg.innerHTML='';
+  if(wh.length>=2){
+    const W=svg.parentElement.clientWidth||340, H=110;
+    const vals=wh.map(e=>e.v);
+    const minV=Math.min(...vals), maxV=Math.max(...vals);
+    const range=maxV-minV||1;
+    const pts=wh.map((e,i)=>{
+      const x=10+(W-20)*(i/(wh.length-1));
+      const y=H-10-(H-20)*((e.v-minV)/range);
+      return{x,y,v:e.v,d:e.d,isPR:e.v>=pr&&pr>0};
+    });
+    // Área preenchida
+    const area=['M',pts[0].x,pts[0].y,...pts.slice(1).flatMap(p=>['L',p.x,p.y]),'L',pts[pts.length-1].x,H,'L',pts[0].x,H,'Z'].join(' ');
+    const areaEl=document.createElementNS('http://www.w3.org/2000/svg','path');
+    areaEl.setAttribute('d',area);
+    areaEl.setAttribute('fill','rgba(56,189,248,0.08)');
+    svg.appendChild(areaEl);
+    // Linha
+    const lineD=['M',pts[0].x,pts[0].y,...pts.slice(1).flatMap(p=>['L',p.x,p.y])].join(' ');
+    const lineEl=document.createElementNS('http://www.w3.org/2000/svg','path');
+    lineEl.setAttribute('d',lineD);
+    lineEl.setAttribute('fill','none');
+    lineEl.setAttribute('stroke','var(--primary)');
+    lineEl.setAttribute('stroke-width','2');
+    lineEl.setAttribute('stroke-linecap','round');
+    lineEl.setAttribute('stroke-linejoin','round');
+    svg.appendChild(lineEl);
+    // Pontos
+    pts.forEach(p=>{
+      const g=document.createElementNS('http://www.w3.org/2000/svg','g');
+      const c=document.createElementNS('http://www.w3.org/2000/svg','circle');
+      c.setAttribute('cx',p.x);c.setAttribute('cy',p.y);c.setAttribute('r','5');
+      c.setAttribute('fill',p.isPR?'var(--gold)':'var(--primary)');
+      c.setAttribute('stroke','var(--surface2)');c.setAttribute('stroke-width','2');
+      const t=document.createElementNS('http://www.w3.org/2000/svg','text');
+      t.setAttribute('x',p.x);t.setAttribute('y',p.y-10);
+      t.setAttribute('text-anchor','middle');t.setAttribute('font-size','9');
+      t.setAttribute('fill',p.isPR?'var(--gold)':'var(--txt-dim)');
+      t.setAttribute('font-family','Space Grotesk, sans-serif');
+      t.textContent=p.v+'kg';
+      g.appendChild(c);g.appendChild(t);svg.appendChild(g);
+    });
+    svg.setAttribute('viewBox',`0 0 ${W} ${H}`);
+  } else {
+    svg.innerHTML='';
+  }
+
+  // ── Lista ──
+  const list=document.getElementById('wh-list');
+  if(!wh.length){
+    list.innerHTML='<div class="wh-empty">Nenhum peso registrado ainda.<br>Digite um valor no campo Peso para começar.</div>';
+    return;
+  }
+  list.innerHTML=[...wh].reverse().map((e,i)=>`
+    <div class="wh-entry">
+      <span class="wh-entry-date">${formatDate(e.d)}</span>
+      <span class="wh-entry-val ${e.v>=pr&&pr>0?'wh-pr':''}">${e.v} kg ${e.v>=pr&&pr>0?'🏆':''}</span>
+      <button class="wh-del-btn" onclick="deleteWhEntry('${exId}',${wh.length-1-i})" title="Remover"><i class="ph-bold ph-trash"></i></button>
+    </div>`).join('');
+}
+
+function formatDate(iso){
+  const[y,m,d]=iso.split('-');return`${d}/${m}/${y}`;
+}
+
+function deleteWhEntry(exId,idx){
+  const wh=JSON.parse(getCached('wh_'+exId)||'[]');
+  wh.splice(idx,1);
+  setCached('wh_'+exId,JSON.stringify(wh));
+  renderWhModal(exId);
+}
+
+function clearWeightHistory(){
+  if(!_whCurrentId)return;
+  openConfirmModal('Limpar histórico?','Todos os registros de peso serão apagados.',()=>{
+    delCached('wh_'+_whCurrentId);
+    renderWhModal(_whCurrentId);
+    showToast('Histórico limpo ✓');
+  });
+}
+
+/* ── também inclui wh_ no backup de exportação ── */
+function checkSyncOnLoad(){
+  try{const hash=window.location.hash;if(!hash.startsWith('#sync='))return;const enc=hash.replace('#sync=','');if(!enc)return;history.replaceState(null,'',window.location.pathname);setTimeout(()=>{openSyncModal();switchSyncTab('import');document.getElementById('import-paste').value='training-pro://data?v=1&d='+enc;showConfirmSyncImport(enc)},400)}catch(e){}
+}
+function showConfirmSyncImport(enc){openConfirmModal('Importar treino sincronizado?','Dados atuais serão substituídos.',()=>{doImportFromEncoded(enc);closeSyncModal()})}
+function buildSyncPayload(){
+  const iW=document.getElementById('opt-weights')?.checked??true,iN=document.getElementById('opt-notes')?.checked??true,iH=document.getElementById('opt-history')?.checked??false;
+  const pl={w:workoutData};
+  if(iW||iN){pl.ls={};for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(iW&&(k.startsWith('weight_')||k.startsWith('pr_')||k.startsWith('wh_')))pl.ls[k]=getCached(k);if(iN&&k.startsWith('note_'))pl.ls[k]=getCached(k)}}
+  if(iH){const h=getCached('app_history');if(h)pl.h=JSON.parse(h)}
+  return btoa(unescape(encodeURIComponent(JSON.stringify(pl))));
+}
+function buildSyncLink(){const enc=buildSyncPayload(),base=window.location.href.split('#')[0].split('?')[0];return{link:base+'#sync='+enc,encoded:enc}}
+function rebuildSyncLink(){
+  if(document.getElementById('sync-modal').style.display!=='flex')return;
+  const{link}=buildSyncLink();_currentSyncLink=link;document.getElementById('sync-link-text').textContent=link;
+  const qrEl=document.getElementById('qr-canvas');qrEl.innerHTML='';
+  try{new QRCode(qrEl,{text:link.length<=2800?link:'Link muito grande. Use copiar.',width:200,height:200,colorDark:'#060c18',colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.M})}
+  catch(e){qrEl.innerHTML='<p style="font-size:.74rem;color:#64748b;text-align:center;padding:10px">Link muito grande. Use copiar.</p>'}
+}
+function openSyncModal(){closeFabMobile();document.getElementById('sync-modal').style.display='flex';switchSyncTab('export');setTimeout(rebuildSyncLink,80)}
+function closeSyncModal(){document.getElementById('sync-modal').style.display='none';document.getElementById('import-paste').value='';document.getElementById('import-success-icon').style.display='none';document.getElementById('copy-feedback').style.display='none'}
+function switchSyncTab(tab){document.querySelectorAll('.sync-tab').forEach(b=>b.classList.remove('active'));document.querySelectorAll('.sync-panel').forEach(p=>p.classList.remove('active'));document.getElementById('stab-'+tab).classList.add('active');document.getElementById('spanel-'+tab).classList.add('active');if(tab==='export')setTimeout(rebuildSyncLink,80)}
+document.getElementById('sync-modal').addEventListener('click',function(e){if(e.target===this)closeSyncModal()});
+function copySyncLink(){if(!_currentSyncLink)return;navigator.clipboard.writeText(_currentSyncLink).then(()=>{document.getElementById('copy-feedback').style.display='block';showToast('<i class="ph-bold ph-check-circle" style="color:var(--success)"></i> Link copiado!');setTimeout(()=>{document.getElementById('copy-feedback').style.display='none'},3000)}).catch(()=>{const el=document.getElementById('sync-link-text'),r=document.createRange();r.selectNodeContents(el);window.getSelection().removeAllRanges();window.getSelection().addRange(r)})}
+function importFromLink(){const raw=document.getElementById('import-paste').value.trim();if(!raw){document.getElementById('import-paste').focus();return}let enc=null;if(raw.includes('#sync='))enc=raw.split('#sync=')[1];else if(raw.includes('training-pro://data?')){const m=raw.match(/[?&]d=([^&]+)/);if(m)enc=m[1]}else enc=raw;if(!enc){alert('Formato inválido.');return}doImportFromEncoded(enc)}
+function doImportFromEncoded(enc){
+  try{
+    const pl=JSON.parse(decodeURIComponent(escape(atob(enc))));
+    if(pl.w){workoutData=pl.w;saveDataNow()}
+    if(pl.ls)Object.keys(pl.ls).forEach(k=>{_lsCache[k]=pl.ls[k];localStorage.setItem(k,pl.ls[k])});
+    if(pl.h){_lsCache['app_history']=JSON.stringify(pl.h);localStorage.setItem('app_history',JSON.stringify(pl.h))}
+    const el=document.getElementById('import-success-icon');el.style.display='block';el.style.animation='none';void el.offsetWidth;el.style.animation='successPop .4s cubic-bezier(.34,1.56,.64,1) forwards';
+    burstConfetti(window.innerWidth/2,window.innerHeight/2);
+    setTimeout(()=>{closeSyncModal();currentTabKey=Object.keys(workoutData)[0];saveActiveTab(currentTabKey);renderTabs();renderAll()},1800);
+  }catch(e){alert('Erro ao importar: '+e.message)}
+}
+
+/* ── TIMER ── */
 let timerInterval;
-function startTimer(t) {
-    if (t === 'Nec.') return;
-    stopTimer();
-    let totalSec = t.includes('m') ? parseInt(t.split('m')[0])*60 + (parseInt(t.split('m')[1])||0) : parseInt(t);
-    let sec      = totalSec;
-    const widget = document.getElementById('timer-widget');
-    const text   = document.getElementById('timer-text');
-    const ring   = document.getElementById('progress-ring');
-    const C      = 283;
-    widget.style.display = 'flex';
-    ring.style.strokeDashoffset = 0;
-    ring.style.stroke = 'var(--primary)';
-    text.innerText = sec;
-    timerInterval = setInterval(() => {
-        sec--;
-        text.innerText = sec;
-        ring.style.strokeDashoffset = C - (sec / totalSec) * C;
-        if      (sec <= totalSec * 0.2) ring.style.stroke = 'var(--danger)';
-        else if (sec <= totalSec * 0.5) ring.style.stroke = 'var(--gold)';
-        if (sec <= 0) {
-            clearInterval(timerInterval);
-            text.innerText = "OK";
-            ring.style.stroke = 'var(--success)';
-            if (navigator.vibrate) navigator.vibrate([200,100,200]);
-            setTimeout(stopTimer, 2500);
-        }
-    }, 1000);
+function startTimer(t){
+  if(t==='Nec.')return;stopTimer();
+  let total=t.includes('m')?parseInt(t.split('m')[0])*60+(parseInt(t.split('m')[1])||0):parseInt(t),sec=total;
+  const w=document.getElementById('timer-widget'),txt=document.getElementById('timer-text'),ring=document.getElementById('progress-ring'),C=283;
+  w.style.display='flex';ring.style.strokeDashoffset=0;ring.style.stroke='var(--primary)';txt.innerText=sec;
+  timerInterval=setInterval(()=>{
+    sec--;txt.innerText=sec;ring.style.strokeDashoffset=C-(sec/total)*C;
+    if(sec<=total*.2)ring.style.stroke='var(--danger)';else if(sec<=total*.5)ring.style.stroke='var(--gold)';
+    if(sec<=0){clearInterval(timerInterval);txt.innerText='GO!';ring.style.stroke='var(--success)';if(navigator.vibrate)navigator.vibrate([200,100,200]);showToast('⏱️ Pausa concluída! Bora!');setTimeout(stopTimer,2500)}
+  },1000);
 }
-function stopTimer() { clearInterval(timerInterval); document.getElementById('timer-widget').style.display = 'none'; }
+function stopTimer(){clearInterval(timerInterval);document.getElementById('timer-widget').style.display='none'}
 
-// ============================================================
-//  MODAIS
-// ============================================================
-let _inputCallback = null;
-function openInputModal(title, placeholder, defaultValue, callback) {
-    _inputCallback = callback;
-    document.getElementById('input-modal-title').innerText = title;
-    const field = document.getElementById('input-modal-field');
-    field.placeholder = placeholder; field.value = defaultValue || '';
-    document.getElementById('input-modal').style.display = 'flex';
-    setTimeout(() => { field.focus(); field.select(); }, 80);
-    document.getElementById('input-modal-confirm').onclick = () => {
-        const val = field.value.trim();
-        if (val && _inputCallback) _inputCallback(val);
-        closeInputModal();
-    };
-    field.onkeydown = (e) => { if (e.key === 'Enter') document.getElementById('input-modal-confirm').click(); if (e.key === 'Escape') closeInputModal(); };
+/* ── MODAIS ── */
+let _iCb=null;
+function openInputModal(t,ph,def,cb){_iCb=cb;document.getElementById('input-modal-title').innerText=t;const f=document.getElementById('input-modal-field');f.placeholder=ph;f.value=def||'';document.getElementById('input-modal').style.display='flex';setTimeout(()=>{f.focus();f.select()},80);document.getElementById('input-modal-confirm').onclick=()=>{const v=f.value.trim();if(v&&_iCb)_iCb(v);closeInputModal()};f.onkeydown=e=>{if(e.key==='Enter')document.getElementById('input-modal-confirm').click();if(e.key==='Escape')closeInputModal()}}
+function closeInputModal(){document.getElementById('input-modal').style.display='none';_iCb=null}
+let _cCb=null;
+function openConfirmModal(t,msg,cb,info=false){_cCb=cb;document.getElementById('confirm-modal-title').innerText=t;document.getElementById('confirm-modal-msg').innerText=msg;const ok=document.getElementById('confirm-modal-ok');if(info){ok.style.display='none'}else{ok.style.display='';ok.onclick=()=>{if(_cCb)_cCb();closeConfirmModal()}}document.getElementById('confirm-modal').style.display='flex'}
+function closeConfirmModal(){document.getElementById('confirm-modal').style.display='none';_cCb=null}
+let _eM=null,_eK=null,_eI=null;
+function openExModal(mode,key,ex){
+  _eM=mode;_eK=key||currentTabKey;_eI=ex?ex.id:null;
+  document.getElementById('exercise-modal-title').innerText=mode==='edit'?'Editar Exercício':'Novo Exercício';
+  document.getElementById('ex-modal-name').value=ex?ex.name:'';document.getElementById('ex-modal-reps').value=ex?ex.reps:'3x12';
+  document.getElementById('ex-modal-time').value=ex?ex.time:'1m30';document.getElementById('ex-modal-link').value=ex?(ex.link||''):'';
+  document.getElementById('exercise-modal').style.display='flex';setTimeout(()=>document.getElementById('ex-modal-name').focus(),80);
+  document.getElementById('ex-modal-confirm').onclick=saveExModal;document.getElementById('ex-modal-name').onkeydown=e=>{if(e.key==='Enter')document.getElementById('ex-modal-confirm').click()};
 }
-function closeInputModal() { document.getElementById('input-modal').style.display = 'none'; _inputCallback = null; }
-
-let _confirmCallback = null;
-function openConfirmModal(title, msg, callback, infoOnly = false) {
-    _confirmCallback = callback;
-    document.getElementById('confirm-modal-title').innerText = title;
-    document.getElementById('confirm-modal-msg').innerText   = msg;
-    const okBtn = document.getElementById('confirm-modal-ok');
-    if (infoOnly) { okBtn.style.display = 'none'; }
-    else { okBtn.style.display = ''; okBtn.onclick = () => { if (_confirmCallback) _confirmCallback(); closeConfirmModal(); }; }
-    document.getElementById('confirm-modal').style.display = 'flex';
+function closeExModal(){document.getElementById('exercise-modal').style.display='none'}
+function saveExModal(){
+  const name=document.getElementById('ex-modal-name').value.trim();if(!name){document.getElementById('ex-modal-name').focus();return}
+  const reps=document.getElementById('ex-modal-reps').value.trim()||'3x12',time=document.getElementById('ex-modal-time').value.trim()||'1m30',link=document.getElementById('ex-modal-link').value.trim();
+  if(_eM==='new')workoutData[_eK].exercises.push({id:'ex_'+Date.now(),name,reps,time,link});
+  else{const ex=workoutData[_eK].exercises.find(e=>e.id===_eI);if(ex){ex.name=name;ex.reps=reps;ex.time=time;ex.link=link}}
+  saveData();renderAll();closeExModal();
 }
-function closeConfirmModal() { document.getElementById('confirm-modal').style.display = 'none'; _confirmCallback = null; }
+document.getElementById('input-modal').addEventListener('click',function(e){if(e.target===this)closeInputModal()});
+document.getElementById('confirm-modal').addEventListener('click',function(e){if(e.target===this)closeConfirmModal()});
+document.getElementById('exercise-modal').addEventListener('click',function(e){if(e.target===this)closeExModal()});
 
-let _exModalMode = null, _exModalKey = null, _exModalId = null;
-function openExModal(mode, key, ex) {
-    _exModalMode = mode; _exModalKey = key || currentTabKey; _exModalId = ex ? ex.id : null;
-    document.getElementById('exercise-modal-title').innerText = mode === 'edit' ? 'Editar Exercício' : 'Novo Exercício';
-    document.getElementById('ex-modal-name').value = ex ? ex.name  : '';
-    document.getElementById('ex-modal-reps').value = ex ? ex.reps  : '3x12';
-    document.getElementById('ex-modal-time').value = ex ? ex.time  : '1m30';
-    document.getElementById('ex-modal-link').value = ex ? (ex.link||'') : '';
-    document.getElementById('exercise-modal').style.display = 'flex';
-    setTimeout(() => document.getElementById('ex-modal-name').focus(), 80);
-    document.getElementById('ex-modal-confirm').onclick = saveExModal;
-    document.getElementById('ex-modal-name').onkeydown  = (e) => { if (e.key === 'Enter') document.getElementById('ex-modal-confirm').click(); };
-}
-function closeExModal() { document.getElementById('exercise-modal').style.display = 'none'; }
-function saveExModal() {
-    const name = document.getElementById('ex-modal-name').value.trim();
-    if (!name) { document.getElementById('ex-modal-name').focus(); return; }
-    const reps = document.getElementById('ex-modal-reps').value.trim() || '3x12';
-    const time = document.getElementById('ex-modal-time').value.trim() || '1m30';
-    const link = document.getElementById('ex-modal-link').value.trim();
-    if (_exModalMode === 'new') {
-        workoutData[_exModalKey].exercises.push({ id: 'ex_'+Date.now(), name, reps, time, link });
-    } else {
-        const ex = workoutData[_exModalKey].exercises.find(e => e.id === _exModalId);
-        if (ex) { ex.name = name; ex.reps = reps; ex.time = time; ex.link = link; }
-    }
-    saveData(); renderAll(); closeExModal();
-}
+function checkAutoReset(){const last=getCached('app_last_active');if(last&&(Date.now()-parseInt(last))>12*60*60*1000)Object.keys(workoutData).forEach(k=>workoutData[k].exercises.forEach(ex=>setCached('check_'+ex.id,'false')))}
 
-document.getElementById('input-modal').addEventListener('click',    function(e){ if(e.target===this) closeInputModal(); });
-document.getElementById('confirm-modal').addEventListener('click',  function(e){ if(e.target===this) closeConfirmModal(); });
-document.getElementById('exercise-modal').addEventListener('click', function(e){ if(e.target===this) closeExModal(); });
-
-// ============================================================
-//  AUTO-RESET (12h sem atividade)
-// ============================================================
-function checkAutoReset() {
-    const last = localStorage.getItem('app_last_active');
-    if (last && (Date.now() - parseInt(last)) > 12*60*60*1000) {
-        Object.keys(workoutData).forEach(k => workoutData[k].exercises.forEach(ex => localStorage.setItem('check_'+ex.id, 'false')));
-    }
-}
-
-// ============================================================
-//  SWIPE para trocar de aba (mobile)
-// ============================================================
-(function initSwipe() {
-    const container = document.getElementById('main-container');
-    let startX = 0, startY = 0, startTime = 0;
-    container.addEventListener('touchstart', (e) => {
-        if (window.innerWidth >= 1024) return;
-        startX = e.touches[0].clientX; startY = e.touches[0].clientY; startTime = Date.now();
-    }, { passive: true });
-    container.addEventListener('touchend', (e) => {
-        if (window.innerWidth >= 1024) return;
-        const dx = e.changedTouches[0].clientX - startX;
-        const dy = e.changedTouches[0].clientY - startY;
-        const dt = Date.now() - startTime;
-        if (dt > 400 || Math.abs(dy) > 120 || Math.abs(dx) < 50) return;
-        const keys        = Object.keys(workoutData);
-        const currentIdx  = keys.indexOf(currentTabKey);
-        const nextIdx     = dx < 0
-            ? (currentIdx + 1) % keys.length
-            : (currentIdx - 1 + keys.length) % keys.length;
-        if (nextIdx === currentIdx) return;
-        const dir = dx < 0 ? '-40px' : '40px';
-        container.style.transition = 'opacity 0.15s ease, transform 0.15s ease';
-        container.style.opacity    = '0';
-        container.style.transform  = `translateX(${dir})`;
-        setTimeout(() => {
-            currentTabKey = keys[nextIdx];
-            saveActiveTab(currentTabKey);
-            renderTabs(); renderAll();
-            const enter = dx < 0 ? '40px' : '-40px';
-            container.style.transition = 'none';
-            container.style.opacity    = '0';
-            container.style.transform  = `translateX(${enter})`;
-            requestAnimationFrame(() => requestAnimationFrame(() => {
-                container.style.transition = 'opacity 0.2s ease, transform 0.2s ease';
-                container.style.opacity    = '1';
-                container.style.transform  = 'translateX(0)';
-            }));
-        }, 150);
-    }, { passive: true });
+/* ── SWIPE ── */
+(function(){
+  const con=document.getElementById('main-container');let sx=0,sy=0,st=0;
+  con.addEventListener('touchstart',e=>{if(window.innerWidth>=1024)return;sx=e.touches[0].clientX;sy=e.touches[0].clientY;st=Date.now()},{passive:true});
+  con.addEventListener('touchend',e=>{
+    if(window.innerWidth>=1024)return;const dx=e.changedTouches[0].clientX-sx,dy=e.changedTouches[0].clientY-sy;
+    if(Date.now()-st>400||Math.abs(dy)>120||Math.abs(dx)<50)return;
+    const keys=Object.keys(workoutData),ci=keys.indexOf(currentTabKey),ni=dx<0?(ci+1)%keys.length:(ci-1+keys.length)%keys.length;
+    if(ni===ci)return;const dir=dx<0?'-44px':'44px';
+    con.style.transition='opacity .15s ease,transform .15s ease';con.style.opacity='0';con.style.transform=`translateX(${dir})`;
+    setTimeout(()=>{currentTabKey=keys[ni];saveActiveTab(currentTabKey);renderTabs();renderAll();const en=dx<0?'44px':'-44px';con.style.transition='none';con.style.opacity='0';con.style.transform=`translateX(${en})`;requestAnimationFrame(()=>requestAnimationFrame(()=>{con.style.transition='opacity .22s ease,transform .22s ease';con.style.opacity='1';con.style.transform='translateX(0)'}))},150);
+  },{passive:true});
 })();
 </script>
 </body>
