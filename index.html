@@ -893,7 +893,6 @@ h2{font-family:'Syne',sans-serif;font-size:.72rem;color:var(--txt-dim);text-tran
   <div class="desktop-side-actions desktop-only">
     <button onclick="fabEdit()" id="desktop-edit-btn" data-tip="Modo Edição"><i class="ph-bold ph-gear"></i> Modo Edição</button>
     <button onclick="openSettings()" data-tip="Configurações"><i class="ph-bold ph-sliders"></i> Configurações</button>
-    <button onclick="openSyncModal()" class="btn-sync-desktop" data-tip="Sincronizar"><i class="ph-bold ph-share-network"></i> Sincronizar</button>
     <button onclick="exportData()" data-tip="Exportar Backup"><i class="ph-bold ph-download-simple"></i> Exportar Backup</button>
     <button onclick="document.getElementById('import-file').click()" data-tip="Importar Backup"><i class="ph-bold ph-upload-simple"></i> Importar Backup</button>
     <button onclick="exportPDF()" style="color:var(--accent)" data-tip="Baixar PDF"><i class="ph-bold ph-file-pdf"></i> Baixar Ficha PDF</button>
@@ -909,11 +908,10 @@ h2{font-family:'Syne',sans-serif;font-size:.72rem;color:var(--txt-dim);text-tran
   <button onclick="openSyncModal()" style="color:var(--primary);border-color:rgba(56,189,248,.28)"><i class="ph-bold ph-share-network"></i> Sincronizar</button>
   <button onclick="openTemplatesModal()" style="color:var(--primary)"><i class="ph-bold ph-magic-wand"></i> Nova Aba</button>
   <button onclick="duplicateTab(currentTabKey)" style="color:var(--primary)"><i class="ph-bold ph-copy"></i> Duplicar Aba</button>
-  <button onclick="openArchivedModal()"><i class="ph-bold ph-archive"></i> Arquivadas</button>
+  <button onclick="openArchivedModal()" style="color:var(--primary)"><i class="ph-bold ph-archive"></i> Arquivadas</button>
   <button onclick="fabAdd()" style="color:var(--primary)"><i class="ph-bold ph-plus-circle"></i> Novo Exercício</button>
-  <button onclick="fabReset()"><i class="ph-bold ph-arrows-counter-clockwise"></i> Limpar Hoje</button>
+  <button onclick="fabReset()" style="color:var(--primary)"><i class="ph-bold ph-arrows-counter-clockwise"></i> Limpar Hoje</button>
   <button onclick="openStats()" style="color:var(--primary)"><i class="ph-bold ph-chart-bar"></i> Estatísticas</button>
-  <button onclick="openHistory()" style="background:linear-gradient(135deg,var(--primary),#60a5fa);color:white;border:none"><i class="ph-bold ph-calendar"></i> Frequência</button>
 </div>
 
 <div class="container" id="main-container"></div>
@@ -1038,7 +1036,7 @@ h2{font-family:'Syne',sans-serif;font-size:.72rem;color:var(--txt-dim);text-tran
       <div class="cfg-section-title"><i class="ph-bold ph-wrench"></i> Gestão</div>
       <div style="display:flex;flex-direction:column;gap:8px">
         <button class="cfg-mgmt-btn" onclick="closeSettings();openSyncModal()">
-          <i class="ph-bold ph-share-network" style="color:var(--primary)"></i>
+          <i class="ph-bold ph-share-network"></i>
           <div><div class="cfg-mgmt-label">Sincronizar / QR Code</div><div class="cfg-mgmt-sub">Compartilhe treinos entre dispositivos</div></div>
         </button>
         <button class="cfg-mgmt-btn" onclick="closeSettings();exportData()">
@@ -1049,13 +1047,13 @@ h2{font-family:'Syne',sans-serif;font-size:.72rem;color:var(--txt-dim);text-tran
           <i class="ph-bold ph-upload-simple"></i>
           <div><div class="cfg-mgmt-label">Importar Backup</div><div class="cfg-mgmt-sub">Restaura dados de um arquivo JSON</div></div>
         </button>
-        <button class="cfg-mgmt-btn" onclick="closeSettings();exportPDF()" style="color:var(--accent)">
-          <i class="ph-bold ph-file-pdf"></i>
-          <div><div class="cfg-mgmt-label">Baixar Ficha PDF</div><div class="cfg-mgmt-sub">Exporta a ficha atual em PDF</div></div>
-        </button>
         <button class="cfg-mgmt-btn" onclick="closeSettings();openArchivedModal()">
           <i class="ph-bold ph-archive"></i>
           <div><div class="cfg-mgmt-label">Abas Arquivadas</div><div class="cfg-mgmt-sub">Restaure ou exclua abas arquivadas</div></div>
+        </button>
+        <button class="cfg-mgmt-btn" onclick="closeSettings();exportPDF()" style="color:var(--accent)">
+          <i class="ph-bold ph-file-pdf" style="color:var(--accent)"></i>
+          <div><div class="cfg-mgmt-label">Baixar Ficha PDF</div><div class="cfg-mgmt-sub" style="color:var(--accent)">Exporta a ficha atual em PDF</div></div>
         </button>
       </div>
     </div>
