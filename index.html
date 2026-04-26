@@ -551,7 +551,7 @@ h2{font-family:'Syne',sans-serif;font-size:.72rem;color:var(--txt-dim);text-tran
 /* ── NOTAS DE SESSÃO ── */
 .session-note-modal-overlay{
   display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);
-  z-index:3700;align-items:center;justify-content:center;backdrop-filter:blur(8px);
+  z-index:4100;align-items:center;justify-content:center;backdrop-filter:blur(8px);
 }
 .session-note-box{
   background:var(--surface2);border:1px solid var(--border);border-radius:26px;
@@ -659,56 +659,246 @@ h2{font-family:'Syne',sans-serif;font-size:.72rem;color:var(--txt-dim);text-tran
 .stats-top-name{flex:1;font-size:.84rem;font-weight:700;color:var(--txt)}
 .stats-top-val{font-size:.8rem;font-weight:800;color:var(--primary)}
 .stats-top-delta{font-size:.7rem;font-weight:700;padding:2px 7px;border-radius:20px;white-space:nowrap}
+/* ── Settings — botões de gestão ── */
+.cfg-mgmt-btn{
+  width:100%;background:rgba(0,0,0,.12);border:1px solid var(--border);
+  border-radius:var(--r-sm);padding:12px 14px;cursor:pointer;
+  font-family:'Space Grotesk',sans-serif;color:var(--txt);
+  display:flex;align-items:center;gap:12px;text-align:left;
+  transition:background .2s,transform .18s;
+}
+.cfg-mgmt-btn i{font-size:1.1rem;flex-shrink:0;color:var(--txt-dim)}
+.cfg-mgmt-btn:hover{background:var(--primary-d);transform:translateX(3px)}
+.cfg-mgmt-label{font-size:.84rem;font-weight:700}
+.cfg-mgmt-sub{font-size:.7rem;color:var(--txt-dim);margin-top:2px}
+
 /* ── DESKTOP ── */
 @media(min-width:1024px){
+  .cfg-mgmt-section{display:none!important}
   body{padding-bottom:0}
-  header{position:fixed;left:0;top:0;width:270px;height:100vh;background:rgba(6,12,24,0.82);border-right:1px solid var(--border);border-bottom:none;z-index:100;padding:44px 0;display:flex;flex-direction:column;animation:none}
-  [data-theme="light"] header{background:rgba(238,242,251,0.85)}
-  .desktop-side-actions{margin-top:auto;margin-bottom:100px;padding:0 20px;display:flex;flex-direction:column;gap:9px}
-  .desktop-side-actions button{background:var(--surface);border:1px solid var(--border);padding:12px 16px;border-radius:var(--r-sm);cursor:pointer;font-size:.8rem;font-weight:700;color:var(--txt);text-align:left;font-family:'Space Grotesk',sans-serif;transition:transform .2s,box-shadow .2s,background .2s;display:flex;align-items:center;gap:10px}
-  .desktop-side-actions button:hover{transform:translateX(4px);background:var(--primary-d);box-shadow:0 4px 16px rgba(0,0,0,.2)}
-  .desktop-side-actions .btn-sync-desktop{color:var(--primary);border-color:rgba(56,189,248,.25)}
-  #tabs-wrapper{position:fixed;left:20px;top:105px;width:228px;max-width:none;border:none;z-index:101;background:transparent}
-  .tabs-container{flex-direction:column;background:transparent;gap:6px;overflow:visible}
-  .tab-btn{text-align:left;padding:12px 20px;font-size:.92rem;border-radius:var(--r-sm)}
+
+  header{
+    position:fixed;left:0;top:0;width:270px;height:100vh;
+    background:rgba(6,12,24,0.9);
+    border-right:1px solid var(--border);border-bottom:none;
+    z-index:100;padding:0;display:flex;flex-direction:column;
+    animation:none;overflow:visible;
+    transition:width .5s linear(0,0.004,0.016 2.5%,0.059 5%,0.141 7.7%,0.281 10.8%,0.723 18.6%,0.938 23%,1.017,1.077,1.105 30%,1.116,1.107,1.09,1.067,1.044 39%,1.007 44%,0.988 47%,0.979 50%,0.984 55%,0.998 65%,1.004 72%,1);
+    backdrop-filter:blur(24px) saturate(180%);
+    will-change:width;
+  }
+  [data-theme="light"] header{background:rgba(238,242,251,0.94)}
+  header>*{min-width:0;overflow:hidden}
+  #sidebar-toggle{overflow:visible}
+
+  #sidebar-toggle{
+    position:absolute;top:24px;right:-14px;
+    width:28px;height:28px;border-radius:50%;
+    background:var(--bg);border:1.5px solid var(--border);
+    color:var(--txt-dim);cursor:pointer;z-index:400;
+    display:flex;align-items:center;justify-content:center;
+    font-size:.72rem;
+    box-shadow:0 2px 12px rgba(0,0,0,.5),inset 0 1px rgba(255,255,255,.06);
+    transition:background .2s,color .2s,box-shadow .25s,transform .5s linear(0,0.004,0.016 2.5%,0.059 5%,0.141 7.7%,0.281 10.8%,0.723 18.6%,0.938 23%,1.017,1.077,1.105 30%,1.116,1.107,1.09,1.067,1.044 39%,1.007 44%,0.988 47%,0.979 50%,0.984 55%,0.998 65%,1.004 72%,1);
+  }
+  #sidebar-toggle:hover{
+    background:var(--primary-d);color:var(--primary);
+    box-shadow:0 0 0 5px rgba(56,189,248,.1),0 2px 12px rgba(0,0,0,.5);
+  }
+  #sidebar-toggle i{
+    display:flex;
+    transition:transform .5s linear(0,0.004,0.016 2.5%,0.059 5%,0.141 7.7%,0.281 10.8%,0.723 18.6%,0.938 23%,1.017,1.077,1.105 30%,1.116,1.107,1.09,1.067,1.044 39%,1.007 44%,0.988 47%,0.979 50%,0.984 55%,0.998 65%,1.004 72%,1);
+  }
+
+  header h1{
+    padding:28px 20px 16px;flex-shrink:0;margin:0;
+    white-space:nowrap;letter-spacing:3px;
+    transition:padding .5s linear(0,0.004,0.016 2.5%,0.059 5%,0.141 7.7%,0.281 10.8%,0.723 18.6%,0.938 23%,1.017,1.077,1.105 30%,1.116,1.107,1.09,1.067,1.044 39%,1.007 44%,0.988 47%,0.979 50%,0.984 55%,0.998 65%,1.004 72%,1),opacity .3s,letter-spacing .4s;
+  }
+
+  #tabs-wrapper{
+    position:static;width:auto;max-width:none;border:none;
+    z-index:auto;background:transparent;flex:1;
+    overflow-y:auto;overflow-x:hidden;
+    padding:0 12px;min-height:0;
+    transition:padding .5s linear(0,0.004,0.016 2.5%,0.059 5%,0.141 7.7%,0.281 10.8%,0.723 18.6%,0.938 23%,1.017,1.077,1.105 30%,1.116,1.107,1.09,1.067,1.044 39%,1.007 44%,0.988 47%,0.979 50%,0.984 55%,0.998 65%,1.004 72%,1);
+  }
+  #tabs-wrapper::-webkit-scrollbar{width:3px}
+  #tabs-wrapper::-webkit-scrollbar-track{background:transparent}
+  #tabs-wrapper::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:4px}
+  .tabs-container{flex-direction:column;background:transparent;gap:4px;overflow:visible}
+  .tab-btn-wrapper{position:relative}
+  .tab-btn{
+    text-align:left;padding:13px 18px;font-size:.97rem;font-weight:600;
+    border-radius:10px;white-space:nowrap;overflow:hidden;
+    width:100%;display:flex;align-items:center;gap:10px;color:var(--txt-dim);
+    transition:padding .5s linear(0,0.004,0.016 2.5%,0.059 5%,0.141 7.7%,0.281 10.8%,0.723 18.6%,0.938 23%,1.017,1.077,1.105 30%,1.116,1.107,1.09,1.067,1.044 39%,1.007 44%,0.988 47%,0.979 50%,0.984 55%,0.998 65%,1.004 72%,1),background .2s,color .2s,transform .15s;
+  }
   .tab-btn::after{display:none!important}
-  .tab-btn.active{background:linear-gradient(135deg,var(--primary),#60a5fa);color:white;box-shadow:0 6px 22px rgba(56,189,248,.35);border-radius:var(--r-sm)}
+  .tab-btn:hover:not(.active){
+    background:rgba(255,255,255,.06);color:var(--txt);transform:translateX(2px);
+  }
+  .tab-btn.active{
+    background:linear-gradient(135deg,var(--primary),#60a5fa);
+    color:white;font-weight:700;
+    box-shadow:0 4px 18px rgba(56,189,248,.28);
+  }
   .tab-controls{display:none!important}
   .tab-btn-wrapper .tab-suggested-dot{display:none!important}
-  .tab-btn-wrapper.suggested .tab-btn::after{content:'HOJE';font-size:.52rem;font-weight:800;background:var(--gold);color:#060c18;padding:2px 7px;border-radius:20px;margin-left:8px;vertical-align:middle;display:inline-block!important;width:auto;height:auto;position:static;background-clip:initial;-webkit-background-clip:initial}
-  .tab-btn-wrapper.suggested .tab-btn.active::after{display:inline-block!important}
+  .tab-btn-wrapper.suggested .tab-btn::after{
+    content:'HOJE';font-size:.48rem;font-weight:800;
+    background:var(--gold);color:#060c18;
+    padding:2px 6px;border-radius:20px;margin-left:auto;
+    display:inline-block!important;flex-shrink:0;
+  }
+
+  .tab-btn-wrapper[data-tip]::after{
+    content:attr(data-tip);
+    position:absolute;left:calc(100% + 14px);top:50%;
+    transform:translateY(-50%) translateX(-6px);
+    background:var(--surface2);border:1px solid var(--border-hi);
+    color:var(--txt);font-size:.78rem;font-weight:700;
+    padding:6px 12px;border-radius:10px;white-space:nowrap;
+    pointer-events:none;opacity:0;z-index:600;
+    box-shadow:0 8px 28px rgba(0,0,0,.45);
+    font-family:'Space Grotesk',sans-serif;
+    transition:opacity .18s,transform .22s;
+  }
+
+  .desktop-side-actions{
+    flex-shrink:0;padding:10px 12px 24px;
+    display:flex;flex-direction:column;gap:4px;
+    border-top:1px solid var(--border);background:inherit;margin:0;overflow:visible;
+  }
+  .desktop-side-actions button{
+    background:transparent;border:1px solid transparent;
+    padding:10px 14px;border-radius:10px;cursor:pointer;
+    font-size:.82rem;font-weight:600;color:var(--txt-dim);
+    text-align:left;font-family:'Space Grotesk',sans-serif;
+    display:flex;align-items:center;gap:10px;
+    white-space:nowrap;overflow:hidden;width:100%;position:relative;
+    transition:background .2s,color .2s,border-color .2s,
+               padding .5s linear(0,0.004,0.016 2.5%,0.059 5%,0.141 7.7%,0.281 10.8%,0.723 18.6%,0.938 23%,1.017,1.077,1.105 30%,1.116,1.107,1.09,1.067,1.044 39%,1.007 44%,0.988 47%,0.979 50%,0.984 55%,0.998 65%,1.004 72%,1),font-size .3s;
+  }
+  .desktop-side-actions button:hover{
+    background:rgba(255,255,255,.06);
+    border-color:var(--border);color:var(--txt);
+    transform:translateX(2px);
+  }
+  .desktop-side-actions button i{font-size:.95rem;flex-shrink:0;min-width:16px;text-align:center}
+  .desktop-side-actions .btn-sync-desktop{color:var(--primary)}
+  .desktop-side-actions .btn-sync-desktop:hover{
+    background:rgba(56,189,248,.08);border-color:rgba(56,189,248,.28);
+  }
+
+  .desktop-side-actions button[data-tip]::after{
+    content:attr(data-tip);
+    position:absolute;left:calc(100% + 14px);top:50%;
+    transform:translateY(-50%) translateX(-6px);
+    background:var(--surface2);border:1px solid var(--border-hi);
+    color:var(--txt);font-size:.78rem;font-weight:700;
+    padding:6px 12px;border-radius:10px;white-space:nowrap;
+    pointer-events:none;opacity:0;z-index:600;
+    box-shadow:0 8px 28px rgba(0,0,0,.45);
+    font-family:'Space Grotesk',sans-serif;
+    transition:opacity .18s,transform .22s;
+  }
+
+  /* ── MODO COLAPSADO ── */
+  body.sidebar-collapsed header{width:64px}
+
+  body.sidebar-collapsed header h1{
+    padding:22px 0 12px;letter-spacing:0;
+    font-size:.5rem;opacity:.35;text-align:center;
+  }
+  body.sidebar-collapsed #tabs-wrapper{padding:0 8px}
+  body.sidebar-collapsed .tab-btn{
+    padding:10px 0;justify-content:center;
+    font-size:0;transform:none;
+  }
+  body.sidebar-collapsed .tab-btn::before{
+    content:attr(data-abbr);
+    font-size:.75rem;font-weight:900;letter-spacing:.5px;
+  }
+  body.sidebar-collapsed .tab-btn-wrapper.suggested .tab-btn::after{display:none!important}
+  body.sidebar-collapsed .tab-btn-wrapper[data-tip]:hover::after{
+    opacity:1;transform:translateY(-50%) translateX(0);
+  }
+  body.sidebar-collapsed .desktop-side-actions{padding:10px 8px 24px}
+  body.sidebar-collapsed .desktop-side-actions button{
+    padding:9px 0;justify-content:center;font-size:0;
+    border-radius:10px;transform:none;
+  }
+  body.sidebar-collapsed .desktop-side-actions button i{font-size:1rem;min-width:auto}
+  body.sidebar-collapsed .desktop-side-actions button:hover{
+    background:rgba(255,255,255,.08);transform:none;
+  }
+  body.sidebar-collapsed .desktop-side-actions button[data-tip]:hover::after{
+    opacity:1;transform:translateY(-50%) translateX(0);
+  }
+  body.sidebar-collapsed #sidebar-toggle i{transform:rotate(180deg)}
+
+  body.sidebar-collapsed .action-bar-desktop{margin-left:84px;width:calc(100% - 84px)}
+  body.sidebar-collapsed .container{margin-left:84px;width:calc(100% - 84px)}
+
+  /* ── LAYOUT PRINCIPAL ── */
   .summary-card{position:fixed;right:30px;bottom:30px;width:258px;margin:0;z-index:102}
-  .action-bar-desktop{margin-left:292px;max-width:1200px;width:calc(100% - 292px);padding:38px 20px 0;box-sizing:border-box;display:flex!important;gap:12px;margin-bottom:10px;flex-wrap:wrap}
-  .action-bar-desktop button{background:var(--surface);border:1px solid var(--border);padding:10px 20px;border-radius:var(--r-sm);cursor:pointer;font-size:.83rem;font-weight:700;color:var(--txt);font-family:'Space Grotesk',sans-serif;transition:transform .2s,box-shadow .2s,background .2s;display:flex;align-items:center;gap:8px}
-  .action-bar-desktop button:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,.25);background:var(--primary-d)}
-  .container{margin-left:292px;max-width:1200px;width:calc(100% - 292px);padding-top:10px}
+  .action-bar-desktop{
+    margin-left:290px;max-width:1200px;width:calc(100% - 290px);
+    padding:36px 20px 0;box-sizing:border-box;display:flex!important;
+    gap:10px;margin-bottom:10px;flex-wrap:wrap;
+    transition:margin-left .5s linear(0,0.004,0.016 2.5%,0.059 5%,0.141 7.7%,0.281 10.8%,0.723 18.6%,0.938 23%,1.017,1.077,1.105 30%,1.116,1.107,1.09,1.067,1.044 39%,1.007 44%,0.988 47%,0.979 50%,0.984 55%,0.998 65%,1.004 72%,1),width .5s linear(0,0.004,0.016 2.5%,0.059 5%,0.141 7.7%,0.281 10.8%,0.723 18.6%,0.938 23%,1.017,1.077,1.105 30%,1.116,1.107,1.09,1.067,1.044 39%,1.007 44%,0.988 47%,0.979 50%,0.984 55%,0.998 65%,1.004 72%,1);
+  }
+  .action-bar-desktop button{
+    background:var(--surface);border:1px solid var(--border);
+    padding:9px 18px;border-radius:var(--r-sm);cursor:pointer;
+    font-size:.82rem;font-weight:700;color:var(--txt);
+    font-family:'Space Grotesk',sans-serif;
+    transition:transform .2s,box-shadow .2s,background .2s;
+    display:flex;align-items:center;gap:8px;
+  }
+  .action-bar-desktop button:hover{
+    transform:translateY(-2px);
+    box-shadow:0 6px 20px rgba(0,0,0,.25);background:var(--primary-d);
+  }
+  .container{
+    margin-left:290px;max-width:1200px;width:calc(100% - 290px);padding-top:10px;
+    transition:margin-left .5s linear(0,0.004,0.016 2.5%,0.059 5%,0.141 7.7%,0.281 10.8%,0.723 18.6%,0.938 23%,1.017,1.077,1.105 30%,1.116,1.107,1.09,1.067,1.044 39%,1.007 44%,0.988 47%,0.979 50%,0.984 55%,0.998 65%,1.004 72%,1),width .5s linear(0,0.004,0.016 2.5%,0.059 5%,0.141 7.7%,0.281 10.8%,0.723 18.6%,0.938 23%,1.017,1.077,1.105 30%,1.116,1.107,1.09,1.067,1.044 39%,1.007 44%,0.988 47%,0.979 50%,0.984 55%,0.998 65%,1.004 72%,1);
+  }
   #main-container{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:18px;align-items:start}
   h2{grid-column:1/-1;font-size:1.5rem;margin-bottom:28px}
   .fab-container{display:none}
   .desktop-only{display:flex!important}
 }
-@media(max-width:1023px){.desktop-only{display:none!important}}
+@media(max-width:1023px){
+  .desktop-only{display:none!important}
+  /* Oculta o botão de colapsar sidebar — exclusivo do desktop */
+  #sidebar-toggle{display:none!important}
+  /* No mobile, tabs-wrapper flui naturalmente dentro do header */
+  #tabs-wrapper{width:100%;max-width:500px;margin:0 auto;position:relative;z-index:1}
+}
 </style>
 </head>
 <body onload="init()">
 
 <header>
+  <button id="sidebar-toggle" onclick="toggleSidebar()" title="Recolher menu"><i class="ph-bold ph-caret-left"></i></button>
   <h1>TRAINING PRO</h1>
+  <div id="tabs-wrapper">
+    <div class="tabs-container" id="tabs-list"></div>
+    <div class="tab-controls">
+      <button class="btn-add-tab" onclick="openTemplatesModal()"><i class="ph-bold ph-magic-wand"></i> Nova Aba</button>
+    </div>
+  </div>
   <div class="desktop-side-actions desktop-only">
-    <button onclick="fabEdit()" id="desktop-edit-btn"><i class="ph-bold ph-gear"></i> Modo Edição</button>
-    <button onclick="openSettings()"><i class="ph-bold ph-sliders"></i> Configurações</button>
-    <button onclick="exportData()"><i class="ph-bold ph-download-simple"></i> Exportar Backup</button>
-    <button onclick="document.getElementById('import-file').click()"><i class="ph-bold ph-upload-simple"></i> Importar Backup</button>
-    <button onclick="exportPDF()" style="color:var(--accent)"><i class="ph-bold ph-file-pdf"></i> Baixar Ficha PDF</button>
+    <button onclick="fabEdit()" id="desktop-edit-btn" data-tip="Modo Edição"><i class="ph-bold ph-gear"></i> Modo Edição</button>
+    <button onclick="openSettings()" data-tip="Configurações"><i class="ph-bold ph-sliders"></i> Configurações</button>
+    <button onclick="openSyncModal()" class="btn-sync-desktop" data-tip="Sincronizar"><i class="ph-bold ph-share-network"></i> Sincronizar</button>
+    <button onclick="exportData()" data-tip="Exportar Backup"><i class="ph-bold ph-download-simple"></i> Exportar Backup</button>
+    <button onclick="document.getElementById('import-file').click()" data-tip="Importar Backup"><i class="ph-bold ph-upload-simple"></i> Importar Backup</button>
+    <button onclick="exportPDF()" style="color:var(--accent)" data-tip="Baixar PDF"><i class="ph-bold ph-file-pdf"></i> Baixar Ficha PDF</button>
   </div>
 </header>
-
-<div id="tabs-wrapper">
-  <div class="tabs-container" id="tabs-list"></div>
-  <div class="tab-controls">
-    <button class="btn-add-tab" onclick="openTemplatesModal()"><i class="ph-bold ph-magic-wand"></i> Nova Aba</button>
-  </div>
-</div>
 
 <div class="summary-card">
   <div class="summary-text" id="summary-text">Carregando...</div>
@@ -719,10 +909,11 @@ h2{font-family:'Syne',sans-serif;font-size:.72rem;color:var(--txt-dim);text-tran
   <button onclick="openSyncModal()" style="color:var(--primary);border-color:rgba(56,189,248,.28)"><i class="ph-bold ph-share-network"></i> Sincronizar</button>
   <button onclick="openTemplatesModal()" style="color:var(--primary)"><i class="ph-bold ph-magic-wand"></i> Nova Aba</button>
   <button onclick="duplicateTab(currentTabKey)" style="color:var(--primary)"><i class="ph-bold ph-copy"></i> Duplicar Aba</button>
-  <button onclick="openArchivedModal()" style="color:var(--primary)"><i class="ph-bold ph-archive"></i> Arquivadas</button>
+  <button onclick="openArchivedModal()"><i class="ph-bold ph-archive"></i> Arquivadas</button>
   <button onclick="fabAdd()" style="color:var(--primary)"><i class="ph-bold ph-plus-circle"></i> Novo Exercício</button>
-  <button onclick="fabReset()" style="color:var(--primary)"><i class="ph-bold ph-arrows-counter-clockwise"></i> Limpar Hoje</button>
-  <button onclick="openStats()" style="background:linear-gradient(135deg,var(--primary),#60a5fa);color:white;border:none"><i class="ph-bold ph-chart-bar"></i> Estatísticas</button>
+  <button onclick="fabReset()"><i class="ph-bold ph-arrows-counter-clockwise"></i> Limpar Hoje</button>
+  <button onclick="openStats()" style="color:var(--primary)"><i class="ph-bold ph-chart-bar"></i> Estatísticas</button>
+  <button onclick="openHistory()" style="background:linear-gradient(135deg,var(--primary),#60a5fa);color:white;border:none"><i class="ph-bold ph-calendar"></i> Frequência</button>
 </div>
 
 <div class="container" id="main-container"></div>
@@ -741,11 +932,6 @@ h2{font-family:'Syne',sans-serif;font-size:.72rem;color:var(--txt-dim);text-tran
 
 <div class="fab-container">
   <div class="fab-menu" id="fab-menu">
-    <div class="fab-item fab-sync" onclick="openSyncModal()"><i class="ph-bold ph-share-network"></i> Sincronizar / QR Code</div>
-    <div class="fab-item" onclick="exportData()"><i class="ph-bold ph-download-simple"></i> Exportar Backup</div>
-    <div class="fab-item" onclick="document.getElementById('import-file').click()"><i class="ph-bold ph-upload-simple"></i> Importar Backup</div>
-    <div class="fab-item" onclick="exportPDF()" style="color:var(--accent)"><i class="ph-bold ph-file-pdf"></i> Baixar Ficha PDF</div>
-    <hr style="width:100%;border:0;border-top:1px solid var(--border);margin:4px 0">
     <div class="fab-item" onclick="openSettings()"><i class="ph-bold ph-sliders"></i> Configurações</div>
     <div class="fab-item" onclick="openStats()"><i class="ph-bold ph-chart-bar"></i> Estatísticas</div>
     <div class="fab-item" id="fab-theme-btn" onclick="toggleTheme()"><i class="ph-bold ph-moon"></i> Mudar Tema</div>
@@ -846,6 +1032,32 @@ h2{font-family:'Syne',sans-serif;font-size:.72rem;color:var(--txt-dim);text-tran
         <i class="ph-bold ph-trash"></i> Resetar todos os dados
       </button>
       <p style="font-size:.7rem;color:var(--txt-dim);margin:8px 0 0;text-align:center">Apaga treinos, pesos, histórico e configurações</p>
+    </div>
+    <!-- GESTÃO (só no mobile — desktop tem action bar) -->
+    <div class="cfg-section cfg-mgmt-section">
+      <div class="cfg-section-title"><i class="ph-bold ph-wrench"></i> Gestão</div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <button class="cfg-mgmt-btn" onclick="closeSettings();openSyncModal()">
+          <i class="ph-bold ph-share-network" style="color:var(--primary)"></i>
+          <div><div class="cfg-mgmt-label">Sincronizar / QR Code</div><div class="cfg-mgmt-sub">Compartilhe treinos entre dispositivos</div></div>
+        </button>
+        <button class="cfg-mgmt-btn" onclick="closeSettings();exportData()">
+          <i class="ph-bold ph-download-simple"></i>
+          <div><div class="cfg-mgmt-label">Exportar Backup</div><div class="cfg-mgmt-sub">Salva seus dados em arquivo JSON</div></div>
+        </button>
+        <button class="cfg-mgmt-btn" onclick="closeSettings();document.getElementById('import-file').click()">
+          <i class="ph-bold ph-upload-simple"></i>
+          <div><div class="cfg-mgmt-label">Importar Backup</div><div class="cfg-mgmt-sub">Restaura dados de um arquivo JSON</div></div>
+        </button>
+        <button class="cfg-mgmt-btn" onclick="closeSettings();exportPDF()" style="color:var(--accent)">
+          <i class="ph-bold ph-file-pdf"></i>
+          <div><div class="cfg-mgmt-label">Baixar Ficha PDF</div><div class="cfg-mgmt-sub">Exporta a ficha atual em PDF</div></div>
+        </button>
+        <button class="cfg-mgmt-btn" onclick="closeSettings();openArchivedModal()">
+          <i class="ph-bold ph-archive"></i>
+          <div><div class="cfg-mgmt-label">Abas Arquivadas</div><div class="cfg-mgmt-sub">Restaure ou exclua abas arquivadas</div></div>
+        </button>
+      </div>
     </div>
   </div>
 </div>
@@ -1105,7 +1317,7 @@ function init(){
   const keys=Object.keys(workoutData);
   currentTabKey=loadActiveTab(keys);
   applyStoredSettings(); // aplica tema, acento e unidade antes de renderizar
-  checkAutoReset();checkSyncOnLoad();renderTabs();renderAll();initMagneticFAB();_injectArchivedButton();
+  checkAutoReset();checkSyncOnLoad();renderTabs();renderAll();initMagneticFAB();_injectArchivedButton();initSidebar();
 }
 
 let _toastTimer, _toastProgressTimer;
@@ -1228,15 +1440,24 @@ function addRipple(btn,e){
 function renderTabs(){
   const sug=getSuggestedTab();
   const activeKeys=Object.keys(workoutData);
-  document.getElementById('tabs-list').innerHTML=activeKeys.map(key=>`
-    <div class="tab-btn-wrapper ${key===sug?'suggested':''}">
+  document.getElementById('tabs-list').innerHTML=activeKeys.map(key=>{
+    const label=workoutData[key].label;
+    const ab=abbrev(label);
+    return `
+    <div class="tab-btn-wrapper ${key===sug?'suggested':''}" data-tip="${label}">
       <button class="btn-tab-rename" onclick="renameTab('${key}')"><i class="ph-bold ph-pencil-simple"></i></button>
       <button class="btn-tab-manage" onclick="archiveTab('${key}')" title="Arquivar aba"><i class="ph-bold ph-archive"></i></button>
-      <button class="tab-btn ${key===currentTabKey?'active':''}" onclick="showWorkout('${key}',event)" ondblclick="renameTab('${key}')" oncontextmenu="renameTab('${key}');return false" title="${workoutData[key].label}">
-        ${abbrev(workoutData[key].label)}
+      <button class="tab-btn ${key===currentTabKey?'active':''}"
+        onclick="showWorkout('${key}',event)"
+        ondblclick="renameTab('${key}')"
+        oncontextmenu="renameTab('${key}');return false"
+        data-abbr="${ab}"
+        title="${label}">
+        ${label}
       </button>
       <span class="tab-suggested-dot"></span>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 }
 
 let _muscleFilter='all';
@@ -2280,26 +2501,14 @@ function exportData(){
 function _injectArchivedButton(){
   const fabMenu=document.getElementById('fab-menu');
   if(!fabMenu) return;
-  // ── Abas Arquivadas ──
-  if(!document.getElementById('fab-archived-btn')){
-    const arch=document.createElement('div');
-    arch.className='fab-item';arch.id='fab-archived-btn';
-    arch.innerHTML='<i class="ph-bold ph-archive"></i> Abas Arquivadas';
-    arch.onclick=openArchivedModal;
-    const novaAba=[...fabMenu.children].find(c=>c.textContent.includes('Nova Aba'));
-    if(novaAba) novaAba.after(arch);
-    else fabMenu.appendChild(arch);
-  }
-  // ── Novo Exercício — sempre após Abas Arquivadas ──
+  // Novo Exercício — última opção do FAB
   if(!document.getElementById('fab-new-ex-btn')){
     const newEx=document.createElement('div');
     newEx.className='fab-item';newEx.id='fab-new-ex-btn';
     newEx.style.color='var(--primary)';
     newEx.innerHTML='<i class="ph-bold ph-plus"></i> Novo Exercício';
     newEx.onclick=fabAdd;
-    const archBtn=document.getElementById('fab-archived-btn');
-    if(archBtn) archBtn.after(newEx);
-    else fabMenu.appendChild(newEx);
+    fabMenu.appendChild(newEx);
   }
 }
 
@@ -2308,15 +2517,24 @@ const _origRenderTabs=renderTabs;
 function renderTabs(){
   const sug=getSuggestedTab();
   const activeKeys=Object.keys(workoutData);
-  document.getElementById('tabs-list').innerHTML=activeKeys.map(key=>`
-    <div class="tab-btn-wrapper ${key===sug?'suggested':''}">
+  document.getElementById('tabs-list').innerHTML=activeKeys.map(key=>{
+    const label=workoutData[key].label;
+    const ab=abbrev(label);
+    return `
+    <div class="tab-btn-wrapper ${key===sug?'suggested':''}" data-tip="${label}">
       <button class="btn-tab-rename" onclick="renameTab('${key}')"><i class="ph-bold ph-pencil-simple"></i></button>
-      <button class="btn-tab-manage" onclick="archiveTab('${key}')" title="Arquivar"><i class="ph-bold ph-archive"></i></button>
-      <button class="tab-btn ${key===currentTabKey?'active':''}" onclick="showWorkout('${key}',event)" ondblclick="renameTab('${key}')" oncontextmenu="duplicateTab('${key}');return false" title="${workoutData[key].label}">
-        ${abbrev(workoutData[key].label)}
+      <button class="btn-tab-manage" onclick="archiveTab('${key}')" title="Arquivar aba"><i class="ph-bold ph-archive"></i></button>
+      <button class="tab-btn ${key===currentTabKey?'active':''}"
+        onclick="showWorkout('${key}',event)"
+        ondblclick="renameTab('${key}')"
+        oncontextmenu="renameTab('${key}');return false"
+        data-abbr="${ab}"
+        title="${label}">
+        ${label}
       </button>
       <span class="tab-suggested-dot"></span>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 }
 
 /* ── Reset do filtro ao trocar de aba ── */
@@ -2786,6 +3004,23 @@ self.addEventListener('fetch',e=>{
     document.getElementById('fab-install-btn')?.remove();
   }
 })();
+
+/* ═══════════════════════════════════════════════════════════
+   SIDEBAR COLLAPSE (desktop)
+   ═══════════════════════════════════════════════════════════ */
+function toggleSidebar(){
+  const collapsed=document.body.classList.toggle('sidebar-collapsed');
+  localStorage.setItem('sidebar_collapsed', collapsed?'1':'0');
+  const btn=document.getElementById('sidebar-toggle');
+  if(btn) btn.title=collapsed?'Expandir menu':'Recolher menu';
+}
+function initSidebar(){
+  if(localStorage.getItem('sidebar_collapsed')==='1'){
+    document.body.classList.add('sidebar-collapsed');
+    const btn=document.getElementById('sidebar-toggle');
+    if(btn) btn.title='Expandir menu';
+  }
+}
 
 /* ── SWIPE ── */
 (function(){
